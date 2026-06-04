@@ -56,11 +56,48 @@ Tables:
 Survey questions:
 ${schemaLines}
 
+IMPORTANT — ordinal "bucket" columns are stored as TEXT ranges, not numbers.
+To compute an average/numeric aggregate over them, map each bucket to a numeric
+midpoint with CASE and ignore "Ne znam/nisam siguran" (treat as NULL):
+
+• q29 (godišnji promet, €):
+  'do 40.000 eura'→20000, '40.000 - 100.000 eura'→70000,
+  '100.000 - 200.000 eura'→150000, '200.000 - 500.000 eura'→350000,
+  '500.000 - 1.000.000 eura'→750000, 'Više od 1.000.000 eura'→1500000
+• q21 (mjesečni posjeti):
+  'Do 10.000'→5000, '10.000 - 20.000'→15000, '20.000 - 50.000'→35000,
+  '50.000 - 100.000'→75000, 'Više od 100.000'→150000
+• q27 (prosječna košarica, €):
+  'Do 50 €'→25, '50 do 100 €'→75, '100 do 200€'→150,
+  '200 do 500€'→350, '500 do 1000€'→750, 'Više od 1000€'→1500
+
 Rules:
 1. Return ONLY a single valid SQL SELECT. No explanation, no markdown.
 2. Never reference respondent_pii.
 3. Always end with LIMIT 50.
-4. Join responses ↔ response_options on respondent_id.`
+4. Join responses ↔ response_options on respondent_id.
+5. When the question asks "per X" / "po X" (e.g. po platformi, po prometu),
+   GROUP BY that dimension — never return a single global number.
+6. For multi-select dimensions (in response_options) exclude the free-text
+   marker option ("Nešto drugo"/"Ostalo") from grouping.
+
+Example — "Koji je prosječni godišnji promet po platformi?":
+SELECT ro.option_value AS platforma,
+       ROUND(AVG(CASE r.q29_godisnji_bruto_promet_vaseg_webshopa_izn
+         WHEN 'do 40.000 eura' THEN 20000
+         WHEN '40.000 - 100.000 eura' THEN 70000
+         WHEN '100.000 - 200.000 eura' THEN 150000
+         WHEN '200.000 - 500.000 eura' THEN 350000
+         WHEN '500.000 - 1.000.000 eura' THEN 750000
+         WHEN 'Više od 1.000.000 eura' THEN 1500000 END)) AS prosjecni_promet_eur,
+       COUNT(*) AS n
+FROM responses r
+JOIN response_options ro ON ro.respondent_id = r.respondent_id
+ AND ro.question_key = 'q04_na_kojoj_platformi_se_nalazi_vas_webshop'
+WHERE ro.option_value <> 'Nešto drugo'
+GROUP BY ro.option_value
+ORDER BY prosjecni_promet_eur DESC NULLS LAST
+LIMIT 50;`
 }
 
 export async function POST(req: NextRequest) {
