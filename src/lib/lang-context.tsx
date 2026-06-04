@@ -15,7 +15,7 @@ const LangContext = createContext<LangCtx>({
 
 export function LangProvider({
   children,
-  initial = 'en',
+  initial = 'hr',
 }: {
   children: React.ReactNode
   initial?: Lang

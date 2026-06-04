@@ -23,7 +23,7 @@ export default async function RootLayout({
   const currentUser = await getCurrentUser()
   const cookieStore = await cookies()
   const langCookie = cookieStore.get('ehmi_lang')?.value
-  const initialLang: Lang = langCookie === 'hr' ? 'hr' : 'en'
+  const initialLang: Lang = langCookie === 'en' ? 'en' : 'hr'
 
   return (
     <html lang={initialLang} className={`${geistSans.variable} h-full antialiased`}>
