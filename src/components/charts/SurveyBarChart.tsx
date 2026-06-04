@@ -13,6 +13,28 @@ import {
 
 export type ChartItem = { option_value: string; count: number; pct: number }
 
+const MAX_LABEL = 30
+
+// Skrati duge labele (npr. slobodni "Ostalo" odgovori) na granici riječi.
+function truncate(s: string): string {
+  if (s.length <= MAX_LABEL) return s
+  const cut = s.slice(0, MAX_LABEL)
+  const lastSpace = cut.lastIndexOf(' ')
+  return (lastSpace > MAX_LABEL * 0.6 ? cut.slice(0, lastSpace) : cut).trimEnd() + '…'
+}
+
+type TickProps = { x?: number; y?: number; payload?: { value?: string } }
+
+function YAxisTick({ x = 0, y = 0, payload }: TickProps) {
+  const full = String(payload?.value ?? '')
+  return (
+    <text x={x} y={y} dy={4} textAnchor="end" fontSize={12} fill="#374151">
+      {truncate(full)}
+      <title>{full}</title>
+    </text>
+  )
+}
+
 type Props = {
   data: ChartItem[]
   title?: string
@@ -37,10 +59,11 @@ export function SurveyBarChart({ data, title, color = '#2563eb' }: Props) {
           <YAxis
             type="category"
             dataKey="option_value"
-            width={170}
-            tick={{ fontSize: 12, fill: '#374151' }}
+            width={185}
+            tick={<YAxisTick />}
             tickLine={false}
             axisLine={false}
+            interval={0}
           />
           <Tooltip
             formatter={(v) => [`${v}`, 'Odgovori']}
