@@ -7,6 +7,8 @@ import { SurveyPieChart } from '@/components/charts/SurveyPieChart'
 import type { OverviewStats } from '@/translations'
 import { translateOption } from '@/translations/survey-data'
 
+const CTA_HREF = 'https://ecommerce.hr/o-udruzi/clanstvo/web-trgovine'
+
 function xlat(data: ChartItem[], lang: string): ChartItem[] {
   if (lang === 'hr') return data
   return data.map(i => ({ ...i, option_value: translateOption(i.option_value) }))
@@ -113,13 +115,38 @@ export function OverviewContent({ data }: { data: OverviewData }) {
             <p className="text-sm text-gray-600 leading-relaxed mb-5">{o.s6.body(s)}</p>
             <SurveyPieChart data={c.q24} title={o.s6.chart1} />
           </div>
-          <div className="space-y-6">
-            <SurveyBarChart data={c.q25} title={o.s6.chart2} color="#16a34a" />
-            <div className="grid grid-cols-2 gap-4">
-              <SurveyPieChart data={c.q23} title={o.s6.chart3} />
-              <SurveyPieChart data={c.q30} title={o.s6.chart4} />
-            </div>
-          </div>
+          <SurveyBarChart data={c.q25} title={o.s6.chart2} color="#16a34a" />
+        </div>
+      </Section>
+
+      <Section title={o.s7.title}>
+        <p className="text-sm text-gray-600 leading-relaxed mb-5">{o.s7.body(s)}</p>
+        <div className="grid sm:grid-cols-2 gap-8 max-w-2xl">
+          <SurveyPieChart data={c.q23} title={o.s7.chart1} />
+          <SurveyPieChart data={c.q30} title={o.s7.chart2} />
+        </div>
+
+        {/* CTA — članstvo u udruzi */}
+        <div className="mt-8 rounded-xl border border-blue-200 bg-blue-50 p-6">
+          <h3 className="text-base font-semibold text-gray-900 mb-4">{o.cta.heading}</h3>
+          <ul className="space-y-2.5 mb-6">
+            {o.cta.benefits.map((b, i) => (
+              <li key={i} className="flex items-start gap-2.5 text-sm text-gray-700">
+                <svg width="18" height="18" viewBox="0 0 20 20" fill="none" className="shrink-0 mt-0.5">
+                  <path d="M16.5 5.5L8 14l-4.5-4.5" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                <span>{b}</span>
+              </li>
+            ))}
+          </ul>
+          <a
+            href={CTA_HREF}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center px-5 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-semibold tracking-wide hover:bg-blue-700 transition-colors"
+          >
+            {o.cta.button}
+          </a>
         </div>
       </Section>
     </div>
