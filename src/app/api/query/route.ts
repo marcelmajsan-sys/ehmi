@@ -10,6 +10,26 @@ function stripCodeFence(s: string): string {
   return s.replace(/^```(?:sql)?\n?/i, '').replace(/\n?```$/i, '').trim().replace(/;+$/, '')
 }
 
+type QueryLogRow = {
+  user_id: string
+  email: string | null
+  role: string
+  question: string
+  sql?: string | null
+  row_count?: number | null
+  success: boolean
+  error?: string | null
+}
+
+// Best-effort audit log of every Explore query. Never blocks the response.
+async function logQuery(row: QueryLogRow) {
+  try {
+    await supabaseAdmin.from('query_log').insert(row)
+  } catch {
+    /* logging must not break the query flow */
+  }
+}
+
 function buildSystemPrompt(role: 'admin' | 'partner', schemaLines: string): string {
   if (role === 'partner') {
     return `You are a PostgreSQL analyst for a Croatian eCommerce survey (173 respondents).
@@ -83,15 +103,19 @@ export async function POST(req: NextRequest) {
   })
 
   const sql = stripCodeFence((sqlMsg.content[0] as { text: string }).text)
+  const logBase = { user_id: user.id, email: user.email ?? null, role, question }
 
   // Validate
   if (!sql.toLowerCase().trimStart().startsWith('select')) {
+    await logQuery({ ...logBase, sql, success: false, error: 'Not a SELECT query' })
     return NextResponse.json({ error: 'AI did not generate a SELECT query', sql }, { status: 422 })
   }
   if (BLACKLIST_ALWAYS.test(sql)) {
+    await logQuery({ ...logBase, sql, success: false, error: 'Disallowed operations' })
     return NextResponse.json({ error: 'Query contains disallowed operations', sql }, { status: 422 })
   }
   if (role === 'partner' && BLACKLIST_PARTNER.test(sql)) {
+    await logQuery({ ...logBase, sql, success: false, error: 'Partner queried non-aggregate data' })
     return NextResponse.json({ error: 'Partners can only query aggregated data', sql }, { status: 422 })
   }
 
@@ -100,8 +124,16 @@ export async function POST(req: NextRequest) {
     .rpc('execute_analyst_query', { query_text: sql })
 
   if (dbError) {
+    await logQuery({ ...logBase, sql, success: false, error: dbError.message })
     return NextResponse.json({ error: dbError.message, sql }, { status: 500 })
   }
+
+  await logQuery({
+    ...logBase,
+    sql,
+    row_count: Array.isArray(rows) ? rows.length : null,
+    success: true,
+  })
 
   // Step 2: Format response
   const formatMsg = await anthropic.messages.create({

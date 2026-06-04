@@ -3,6 +3,7 @@ import { Geist } from 'next/font/google'
 import { cookies } from 'next/headers'
 import './globals.css'
 import { Nav } from '@/components/Nav'
+import { VisitTracker } from '@/components/VisitTracker'
 import { LangProvider } from '@/lib/lang-context'
 import { getCurrentUser } from '@/lib/auth'
 import type { Lang } from '@/translations'
@@ -30,7 +31,10 @@ export default async function RootLayout({
       <body className="min-h-full flex flex-col bg-gray-50">
         <LangProvider initial={initialLang}>
           {currentUser && (
-            <Nav email={currentUser.user.email ?? ''} role={currentUser.role} />
+            <>
+              <Nav email={currentUser.user.email ?? ''} role={currentUser.role} />
+              <VisitTracker />
+            </>
           )}
           <main className="flex-1">{children}</main>
         </LangProvider>

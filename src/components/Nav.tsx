@@ -21,6 +21,7 @@ export function Nav({ email, role }: NavProps) {
     { href: '/pitanja', label: t.nav.questions, adminOnly: false },
     { href: '/explore', label: t.nav.explore, adminOnly: false },
     { href: '/admin/users', label: t.nav.users, adminOnly: true },
+    { href: '/admin/activity', label: t.nav.activity, adminOnly: true },
     { href: '/admin/settings', label: t.nav.settings, adminOnly: true },
   ].filter(tab => !tab.adminOnly || role === 'admin')
 

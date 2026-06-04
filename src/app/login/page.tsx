@@ -27,6 +27,13 @@ export default function LoginPage() {
       return
     }
 
+    // Best-effort login tracking (admin analytics) — never blocks redirect.
+    fetch('/api/track-visit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ event_type: 'login' }),
+    }).catch(() => {})
+
     router.push('/')
     router.refresh()
   }
