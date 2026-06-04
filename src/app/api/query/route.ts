@@ -6,7 +6,7 @@ import { supabaseAdmin } from '@/lib/supabase/admin'
 const BLACKLIST = /\b(insert|update|delete|drop|alter|create|grant|truncate|copy|respondent_pii)\b/i
 
 function stripCodeFence(s: string): string {
-  return s.replace(/^```(?:sql)?\n?/i, '').replace(/\n?```$/i, '').trim()
+  return s.replace(/^```(?:sql)?\n?/i, '').replace(/\n?```$/i, '').trim().replace(/;+$/, '')
 }
 
 export async function POST(req: NextRequest) {
