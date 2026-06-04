@@ -5,7 +5,6 @@ import {
   Pie,
   Cell,
   Tooltip,
-  Legend,
   ResponsiveContainer,
 } from 'recharts'
 
@@ -24,14 +23,14 @@ export function SurveyPieChart({ data, title }: Props) {
       {title && (
         <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">{title}</p>
       )}
-      <ResponsiveContainer width="100%" height={220}>
+      <ResponsiveContainer width="100%" height={180}>
         <PieChart>
           <Pie
             data={data}
             dataKey="count"
             nameKey="option_value"
             cx="50%"
-            cy="45%"
+            cy="50%"
             outerRadius={75}
             innerRadius={38}
           >
@@ -40,15 +39,27 @@ export function SurveyPieChart({ data, title }: Props) {
             ))}
           </Pie>
           <Tooltip
-            formatter={(v, name) => [`${v}`, name]}
+            formatter={(v, name, item) => [`${v} (${item?.payload?.pct ?? 0}%)`, name]}
             contentStyle={{ fontSize: 12, borderRadius: 8 }}
-          />
-          <Legend
-            formatter={v => v}
-            wrapperStyle={{ fontSize: 12 }}
           />
         </PieChart>
       </ResponsiveContainer>
+
+      <ul className="mt-3 space-y-1.5">
+        {data.map((item, i) => (
+          <li key={i} className="flex items-center gap-2 text-xs text-gray-700">
+            <span
+              className="inline-block w-3 h-3 rounded-sm shrink-0"
+              style={{ backgroundColor: COLORS[i % COLORS.length] }}
+            />
+            <span className="flex-1 truncate">{item.option_value}</span>
+            <span className="text-gray-400 tabular-nums">{item.count}</span>
+            <span className="font-semibold text-gray-900 tabular-nums w-10 text-right">
+              {item.pct}%
+            </span>
+          </li>
+        ))}
+      </ul>
     </div>
   )
 }
