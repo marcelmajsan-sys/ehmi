@@ -14,7 +14,7 @@ export default async function AdminUsersPage() {
     { data: questions },
   ] = await Promise.all([
     supabaseAdmin.from('responses').select('*').order('submitted_at', { ascending: false }),
-    supabaseAdmin.from('response_options').select('respondent_id,question_key,option_value'),
+    supabaseAdmin.from('response_options').select('respondent_id,question_key,option_value').limit(20000),
     supabaseAdmin.from('respondent_pii').select('respondent_id,webshop_url,email'),
     supabaseAdmin.from('questions').select('key,ordinal,label,type').order('ordinal'),
   ])
