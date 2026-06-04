@@ -25,7 +25,7 @@ export function Logo() {
           eCommerce Hrvatska
         </span>
         <span className="block text-[10px] font-semibold text-blue-600 tracking-widest uppercase">
-          Market Insights
+          Market Research
         </span>
       </div>
     </Link>
