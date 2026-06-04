@@ -51,9 +51,9 @@ export function OverviewContent({ data }: { data: OverviewData }) {
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
           <KpiCard label={o.kpi.respondents} value="173" />
           <KpiCard label={o.kpi.revenue} value={`${s.pctPromet500k}%`} />
+          <KpiCard label={o.kpi.visits100k} value={`${s.pctPosjeti100k}%`} />
           <KpiCard label={o.kpi.outsideCroatia} value={`${s.pctVanRH ?? 0}%`} />
           <KpiCard label={o.kpi.physicalStore} value={`${s.pctPlosc ?? 0}%`} />
-          <KpiCard label={o.kpi.useAI} value={`${s.pctAI}%`} />
         </div>
       </div>
 

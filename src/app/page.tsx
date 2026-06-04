@@ -58,11 +58,12 @@ export default async function OverviewPage() {
 
   const data: OverviewData = {
     stats: {
-      pctPromet500k: pct(byQ, 'q29_godisnji_bruto_promet_vaseg_webshopa_izn', ['500.000 - 1.000.000 eura', 'Više od 1.000.000 eura']),
-      pctVanRH:      pct(byQ, 'q01_prodajete_li_robu_usluge_van_rh', ['DA']),
-      pctPlosc:      pct(byQ, 'q02_imate_li_fizicku_poslovnicu', ['DA']),
-      pctAI:         pct(byQ, 'q24_koristite_li_ai_alate_za_posao', ['DA']),
-      pctOnline100:  pct(byQ, 'q28_koliki_vam_je_udio_web_trgovine_u_ukupno', ['100% (prodajem isključivo online)']),
+      pctPromet500k:  pct(byQ, 'q29_godisnji_bruto_promet_vaseg_webshopa_izn', ['500.000 - 1.000.000 eura', 'Više od 1.000.000 eura']),
+      pctVanRH:       pct(byQ, 'q01_prodajete_li_robu_usluge_van_rh', ['DA']),
+      pctPlosc:       pct(byQ, 'q02_imate_li_fizicku_poslovnicu', ['DA']),
+      pctPosjeti100k: pct(byQ, 'q21_koliko_posjeta_imate_mjesecno', ['Više od 100.000']),
+      pctAI:          pct(byQ, 'q24_koristite_li_ai_alate_za_posao', ['DA']),
+      pctOnline100:   pct(byQ, 'q28_koliki_vam_je_udio_web_trgovine_u_ukupno', ['100% (prodajem isključivo online)']),
       topPlatforma:  byQ['q04_na_kojoj_platformi_se_nalazi_vas_webshop']?.[0]?.option_value ?? '—',
       pctDostavaKuca: pct(byQ, 'q10_koji_nacin_dostave_nudite', ['dostava na kućnu adresu']),
       pctGoogle:     pct(byQ, 'q19_odaberite_nacine_oglasavanja_i_promocije', ['Google']),

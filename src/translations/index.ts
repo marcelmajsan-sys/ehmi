@@ -6,6 +6,7 @@ export type OverviewStats = {
   topPlatforma: string
   pctVanRH: number
   pctPlosc: number
+  pctPosjeti100k: number
   pctDostavaKuca: number
   pctGoogle: number
   pctAI: number
@@ -35,9 +36,9 @@ const en = {
     kpi: {
       respondents: 'Respondents',
       revenue: 'Revenue > €500k',
+      visits100k: 'Visits > 100k/mo',
       outsideCroatia: 'Sell outside Croatia',
       physicalStore: 'Have physical store',
-      useAI: 'Use AI tools',
     },
     s1: {
       title: '1. Shop Profiles',
@@ -108,9 +109,9 @@ const hr: typeof en = {
     kpi: {
       respondents: 'Ispitanika',
       revenue: 'Promet > 500k €',
+      visits100k: 'Posjeti > 100k/mj',
       outsideCroatia: 'Prodaju van RH',
       physicalStore: 'Imaju poslovnicu',
-      useAI: 'Koriste AI',
     },
     s1: {
       title: '1. Profil trgovina',
