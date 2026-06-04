@@ -78,6 +78,11 @@ Iznad RLS-a, izravne privilegije su oduzete (`0004`):
 
 Pokreni nakon svake promjene koja dira bazu, RLS, `execute_analyst_query`, `/api/query`, ili dodavanja nove tablice/RPC-a. Koristi `SUPABASE_SERVICE_ROLE_KEY` i `NEXT_PUBLIC_SUPABASE_ANON_KEY` iz `.env.local`.
 
+> **Automatizirano:** bihevioralne provjere (točke 1–5, 8–10) pokreće `npm run sec:check`
+> (`scripts/sec-check.mjs`); exit kod 1 ako bilo koja padne — pogodno za CI / pre-deploy gate.
+> Točke 6–7 (ACL novog RPC-a, RLS nove tablice) pokreni **ručno** u Supabase SQL Editoru —
+> ne mogu ići kroz `execute_analyst_query` jer guard blokira `pg_proc`.
+
 **Mora biti BLOKIRANO:**
 1. `anon` poziva `execute_analyst_query(...)` → `permission denied for function`.
 2. Kroz funkciju (i kao service_role): `select ... from respondent_pii` → `disallowed objects`.
