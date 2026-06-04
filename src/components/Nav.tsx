@@ -15,7 +15,7 @@ export function Nav({ email, role }: NavProps) {
   const { lang, setLang, t } = useLang()
 
   const tabs = [
-    { href: '/', label: 'Overview', adminOnly: false },
+    { href: '/', label: t.nav.overview, adminOnly: false },
     { href: '/pitanja', label: t.nav.questions, adminOnly: false },
     { href: '/explore', label: t.nav.explore, adminOnly: false },
     { href: '/admin/users', label: t.nav.users, adminOnly: true },

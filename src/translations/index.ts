@@ -18,8 +18,9 @@ type S = OverviewStats
 
 const en = {
   nav: {
-    questions: 'Questions',
-    explore: 'Explore',
+    overview: 'Summary',
+    questions: 'All results',
+    explore: 'Explore correlations',
     users: 'Users',
     settings: 'Settings',
     signOut: 'Sign out',
@@ -91,8 +92,9 @@ const en = {
 
 const hr: typeof en = {
   nav: {
-    questions: 'Pitanja',
-    explore: 'Istraži',
+    overview: 'Sažetak',
+    questions: 'Svi rezultati',
+    explore: 'Istraži korelacije',
     users: 'Korisnici',
     settings: 'Postavke',
     signOut: 'Odjava',
