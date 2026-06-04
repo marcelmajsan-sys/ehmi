@@ -17,8 +17,8 @@ const EXAMPLES = [
     en: 'Which advertising channels are used by monthly visit count?',
   },
   {
-    hr: 'Koje AI alate i za što koriste trgovci ovisno o godišnjem prometu?',
-    en: 'What AI tools do merchants use by annual revenue level?',
+    hr: 'U koje svrhe trgovci koriste AI alate ovisno o svom godišnjem prometu?',
+    en: 'For what purposes do merchants use AI tools by their annual revenue?',
   },
   {
     hr: 'Koliko trgovaca koristi WooCommerce?',
