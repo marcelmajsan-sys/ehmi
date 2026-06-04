@@ -1,11 +1,30 @@
-'use client'
-import { useLang } from '@/lib/lang-context'
-export default function AdminUsersPage() {
-  const { t } = useLang()
+import { supabaseAdmin } from '@/lib/supabase/admin'
+import { RespondentsContent } from '@/components/users/RespondentsContent'
+
+export type Question  = { key: string; ordinal: number; label: string; type: string }
+export type ROption   = { respondent_id: string; question_key: string; option_value: string }
+export type Pii       = { respondent_id: string; webshop_url: string | null; email: string | null }
+export type Response  = Record<string, unknown> & { respondent_id: string; submitted_at: string | null }
+
+export default async function AdminUsersPage() {
+  const [
+    { data: responses },
+    { data: rOptions },
+    { data: pii },
+    { data: questions },
+  ] = await Promise.all([
+    supabaseAdmin.from('responses').select('*').order('submitted_at', { ascending: false }),
+    supabaseAdmin.from('response_options').select('respondent_id,question_key,option_value'),
+    supabaseAdmin.from('respondent_pii').select('respondent_id,webshop_url,email'),
+    supabaseAdmin.from('questions').select('key,ordinal,label,type').order('ordinal'),
+  ])
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <h1 className="text-2xl font-bold text-gray-900 mb-2">{t.users.title}</h1>
-      <p className="text-gray-500">{t.users.subtitle}</p>
-    </div>
+    <RespondentsContent
+      responses={(responses ?? []) as Response[]}
+      rOptions={rOptions ?? []}
+      pii={pii ?? []}
+      questions={(questions ?? []) as Question[]}
+    />
   )
 }
