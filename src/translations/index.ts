@@ -20,6 +20,7 @@ const en = {
     questions: 'Questions',
     explore: 'Explore',
     users: 'Users',
+    settings: 'Settings',
     signOut: 'Sign out',
   },
   login: {
@@ -92,6 +93,7 @@ const hr: typeof en = {
     questions: 'Pitanja',
     explore: 'Istraži',
     users: 'Korisnici',
+    settings: 'Postavke',
     signOut: 'Odjava',
   },
   login: {
