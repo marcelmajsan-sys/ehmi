@@ -7,6 +7,7 @@ import { translateOption, translateLabel } from '@/translations/survey-data'
 
 type Question = { key: string; ordinal: number; label: string; type: string }
 type Agg = { question_key: string; option_value: string; count: number }
+type OtherAnswer = { question_key: string; answer_value: string; count: number }
 
 function buildChartData(aggs: Agg[], key: string): ChartItem[] {
   const items = aggs.filter(a => a.question_key === key)
@@ -17,9 +18,19 @@ function buildChartData(aggs: Agg[], key: string): ChartItem[] {
     .slice(0, 12)
 }
 
-export function QuestionsContent({ questions, aggs }: { questions: Question[]; aggs: Agg[] }) {
+type Props = { questions: Question[]; aggs: Agg[]; otherAnswers?: OtherAnswer[] }
+
+export function QuestionsContent({ questions, aggs, otherAnswers = [] }: Props) {
   const { t, lang } = useLang()
+  const isEn = lang === 'en'
   const dataQuestions = questions.filter(q => q.type !== 'text')
+
+  const otherByKey = new Map<string, OtherAnswer[]>()
+  for (const o of otherAnswers) {
+    const arr = otherByKey.get(o.question_key) ?? []
+    arr.push(o)
+    otherByKey.set(o.question_key, arr)
+  }
 
   if (!questions.length) {
     return (
@@ -43,12 +54,34 @@ export function QuestionsContent({ questions, aggs }: { questions: Question[]; a
             : rawData
           const label = lang === 'en' ? translateLabel(q.label) : q.label
           const isPie = data.length <= 4
+          const others = otherByKey.get(q.key) ?? []
+          const otherTotal = others.reduce((s, o) => s + o.count, 0)
 
           return (
             <div key={q.key} className="bg-white rounded-xl border border-gray-200 p-5">
               <p className="text-xs text-gray-400 mb-1">Q{q.ordinal}</p>
               <h3 className="text-sm font-semibold text-gray-800 mb-4 leading-snug">{label}</h3>
               {isPie ? <SurveyPieChart data={data} /> : <SurveyBarChart data={data} />}
+
+              {others.length > 0 && (
+                <details className="mt-4 border-t border-gray-100 pt-3">
+                  <summary className="text-xs font-semibold text-gray-500 cursor-pointer select-none hover:text-gray-700">
+                    {isEn
+                      ? `"Other" answers (${others.length} distinct · ${otherTotal} responses)`
+                      : `Odgovori pod "Ostalo" (${others.length} različitih · ${otherTotal} odgovora)`}
+                  </summary>
+                  <ul className="mt-2.5 space-y-1">
+                    {others.map((o, i) => (
+                      <li key={i} className="flex items-center gap-2 text-xs text-gray-700">
+                        <span className="flex-1 break-words">{o.answer_value}</span>
+                        {o.count > 1 && (
+                          <span className="text-gray-400 tabular-nums shrink-0">×{o.count}</span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              )}
             </div>
           )
         })}
