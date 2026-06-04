@@ -5,6 +5,12 @@ import { KpiCard } from '@/components/KpiCard'
 import { SurveyBarChart, type ChartItem } from '@/components/charts/SurveyBarChart'
 import { SurveyPieChart } from '@/components/charts/SurveyPieChart'
 import type { OverviewStats } from '@/translations'
+import { translateOption } from '@/translations/survey-data'
+
+function xlat(data: ChartItem[], lang: string): ChartItem[] {
+  if (lang === 'hr') return data
+  return data.map(i => ({ ...i, option_value: translateOption(i.option_value) }))
+}
 
 export type OverviewData = {
   stats: OverviewStats
@@ -29,8 +35,11 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 export function OverviewContent({ data }: { data: OverviewData }) {
-  const { t } = useLang()
-  const { stats: s, charts: c } = data
+  const { t, lang } = useLang()
+  const { stats: s, charts: raw } = data
+  const c = Object.fromEntries(
+    Object.entries(raw).map(([k, v]) => [k, xlat(v as ChartItem[], lang)])
+  ) as typeof raw
   const o = t.overview
 
   return (

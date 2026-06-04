@@ -3,6 +3,7 @@
 import { useLang } from '@/lib/lang-context'
 import { SurveyBarChart, type ChartItem } from '@/components/charts/SurveyBarChart'
 import { SurveyPieChart } from '@/components/charts/SurveyPieChart'
+import { translateOption, translateLabel } from '@/translations/survey-data'
 
 type Question = { key: string; ordinal: number; label: string; type: string }
 type Agg = { question_key: string; option_value: string; count: number }
@@ -17,7 +18,7 @@ function buildChartData(aggs: Agg[], key: string): ChartItem[] {
 }
 
 export function QuestionsContent({ questions, aggs }: { questions: Question[]; aggs: Agg[] }) {
-  const { t } = useLang()
+  const { t, lang } = useLang()
   const dataQuestions = questions.filter(q => q.type !== 'text')
 
   if (!questions.length) {
@@ -35,14 +36,18 @@ export function QuestionsContent({ questions, aggs }: { questions: Question[]; a
 
       <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-6">
         {dataQuestions.map(q => {
-          const data = buildChartData(aggs, q.key)
-          if (data.length === 0) return null
+          const rawData = buildChartData(aggs, q.key)
+          if (rawData.length === 0) return null
+          const data = lang === 'en'
+            ? rawData.map(i => ({ ...i, option_value: translateOption(i.option_value) }))
+            : rawData
+          const label = lang === 'en' ? translateLabel(q.label) : q.label
           const isPie = data.length <= 4
 
           return (
             <div key={q.key} className="bg-white rounded-xl border border-gray-200 p-5">
               <p className="text-xs text-gray-400 mb-1">Q{q.ordinal}</p>
-              <h3 className="text-sm font-semibold text-gray-800 mb-4 leading-snug">{q.label}</h3>
+              <h3 className="text-sm font-semibold text-gray-800 mb-4 leading-snug">{label}</h3>
               {isPie ? <SurveyPieChart data={data} /> : <SurveyBarChart data={data} />}
             </div>
           )
