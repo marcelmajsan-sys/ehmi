@@ -9,20 +9,25 @@ export type Response  = Record<string, unknown> & { respondent_id: string; submi
 export default async function AdminUsersPage() {
   const [
     { data: responses },
-    { data: rOptions },
+    { data: rOptionsRaw },
     { data: pii },
     { data: questions },
   ] = await Promise.all([
     supabaseAdmin.from('responses').select('*').order('submitted_at', { ascending: false }),
-    supabaseAdmin.from('response_options').select('respondent_id,question_key,option_value').limit(20000),
+    // Use execute_analyst_query to bypass PostgREST max-rows (1000) hard cap
+    supabaseAdmin.rpc('execute_analyst_query', {
+      query_text: 'SELECT respondent_id::text, question_key, option_value FROM response_options',
+    }),
     supabaseAdmin.from('respondent_pii').select('respondent_id,webshop_url,email'),
     supabaseAdmin.from('questions').select('key,ordinal,label,type').order('ordinal'),
   ])
 
+  const rOptions = Array.isArray(rOptionsRaw) ? (rOptionsRaw as ROption[]) : []
+
   return (
     <RespondentsContent
       responses={(responses ?? []) as Response[]}
-      rOptions={rOptions ?? []}
+      rOptions={rOptions}
       pii={pii ?? []}
       questions={(questions ?? []) as Question[]}
     />
