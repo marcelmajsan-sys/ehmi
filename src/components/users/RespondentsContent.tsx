@@ -253,9 +253,9 @@ export function RespondentsContent({ responses, rOptions, pii, questions }: Prop
                               <span>📅 {shortDate(r.submitted_at)}</span>
                             </div>
                           )}
-                          {/* All answers Q1–Q31 in ordinal order */}
+                          {/* All answers in ordinal order (Q31 hidden) */}
                           <div className="grid sm:grid-cols-2 gap-x-8 gap-y-3">
-                            {questions.map(q => {
+                            {questions.filter(q => !q.key.startsWith('q31_')).map(q => {
                               const label = isEn ? translateLabel(q.label) : q.label
                               if (q.type === 'text') {
                                 const v = r[q.key]
