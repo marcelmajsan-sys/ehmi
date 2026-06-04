@@ -20,6 +20,14 @@ const EXAMPLES = [
     hr: 'Koje AI alate i za što koriste trgovci ovisno o godišnjem prometu?',
     en: 'What AI tools do merchants use by annual revenue level?',
   },
+  {
+    hr: 'Koliko trgovaca koristi WooCommerce?',
+    en: 'How many merchants use WooCommerce?',
+  },
+  {
+    hr: 'Koji je prosječni godišnji promet po platformi?',
+    en: 'What is the average annual revenue per platform?',
+  },
 ]
 
 type QueryResult = {
@@ -92,18 +100,18 @@ export default function ExplorePage() {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <h1 className="text-2xl font-bold text-gray-900 mb-1">
-        {isEn ? 'Explore — Correlation Analysis' : 'Istraži — Analiza korelacija'}
+        {isEn ? 'Explore — ask anything about the data' : 'Istraži — pitaj bilo što o podacima'}
       </h1>
       <p className="text-gray-500 mb-8 text-sm">
         {isEn
-          ? 'Ask any question about the survey data. Claude generates SQL, executes it, and interprets the results.'
-          : 'Postavi pitanje o podacima iz istraživanja. Claude generira SQL, izvršava ga i interpretira rezultate.'}
+          ? 'Ask whatever you want about the research data — from simple numbers to correlations. Claude writes the SQL, fetches the data and explains it.'
+          : 'Pitaj što god te zanima o podacima — od jednostavnih brojki do korelacija. Claude piše SQL, dohvaća podatke i objašnjava ih.'}
       </p>
 
       {/* Example correlations */}
       <div className="mb-6">
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-          {isEn ? 'Example correlations' : 'Primjeri korelacija'}
+          {isEn ? 'Example questions' : 'Primjeri pitanja'}
         </p>
         <div className="grid sm:grid-cols-2 gap-2">
           {EXAMPLES.map((ex, i) => (

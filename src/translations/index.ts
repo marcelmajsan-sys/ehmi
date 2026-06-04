@@ -20,7 +20,7 @@ const en = {
   nav: {
     overview: 'Summary',
     questions: 'All results',
-    explore: 'Explore correlations',
+    explore: 'Explore data',
     users: 'Users',
     activity: 'Activity',
     settings: 'Settings',
@@ -95,7 +95,7 @@ const hr: typeof en = {
   nav: {
     overview: 'Sažetak',
     questions: 'Svi rezultati',
-    explore: 'Istraži korelacije',
+    explore: 'Istraži podatke',
     users: 'Korisnici',
     activity: 'Aktivnost',
     settings: 'Postavke',
