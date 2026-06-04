@@ -96,7 +96,7 @@ const hr: typeof en = {
     overview: 'Sažetak',
     questions: 'Svi rezultati',
     explore: 'Istraži podatke',
-    users: 'Korisnici',
+    users: 'Ispitanici',
     activity: 'Aktivnost',
     settings: 'Postavke',
     signOut: 'Odjava',
