@@ -42,3 +42,5 @@ supabase/seed_private.sql
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+.vercel

@@ -1,181 +1,133 @@
 # eCommerce Hrvatska Market Insights — CLAUDE.md
 
-Aplikacija **eCommerce Hrvatska Market Insights** za prikaz rezultata istraživanja
-"Istraživanje web trgovina 2026" (eCommerce Hrvatska) s login pristupom, dvije
-uloge (admin / partner), uvodnim **Overview** tabom i chatom za korelacije.
+Aplikacija za prikaz rezultata istraživanja "Istraživanje web trgovina 2026" (eCommerce Hrvatska).
+Login pristup, dvije uloge (admin / partner), višejezično sučelje (HR/EN).
 
-Privremena domena: **ehmi.vercel.app**
+**Live:** https://research.ecommerce.hr  
+**Backup:** https://ehmi.vercel.app  
+**Repo:** https://github.com/marcelmajsan-sys/ehmi
 
-> Ovaj file je izvor istine za Claude Code. Radi feature-po-feature redom iz
-> sekcije 8 i commitaj nakon svakog koraka.
+> Ovaj file je izvor istine za Claude Code. Radi feature-po-feature i commitaj nakon svakog koraka.
 
 ---
 
-## 1. Uloge i pristup (KLJUČNO)
+## 1. Uloge i pristup
 
-| Uloga    | Vidi                                                                 | Ne vidi                                        |
-|----------|----------------------------------------------------------------------|------------------------------------------------|
-| **admin**   | Sve: pojedinačni odgovori trgovina, PII, agregati, **chat/korelacije** | —                                              |
-| **partner** | Samo **anonimizirane agregate** (grafovi po pitanju)                 | Pojedinačne odgovore trgovina, PII, chat       |
+| Uloga    | Tabovi                                                        |
+|----------|---------------------------------------------------------------|
+| **admin**   | Sažetak · Svi rezultati · Istraži korelacije · Korisnici · Postavke |
+| **partner** | Sažetak · Svi rezultati · Istraži korelacije (samo agregati)  |
 
-- Prvi admin: `marcel.majsan@gmail.com` (seeda se automatski na registraciju).
-- Admin kreira ostale korisnike i bira im ulogu (admin ili partner).
-- Partner login postoji, ali su podaci trgovina na razini ispitanika
-  skriveni — partneri dobivaju isključivo zbirne rezultate.
-- Zaštita je dvoslojna: **RLS u bazi** (primarno) + provjera uloge u
-  middleware-u / route handlerima (UX). Nikad se ne oslanjaj samo na frontend.
+- Zaštita: **RLS u bazi** (primarno) + middleware route-gating (UX).
+- Prvi admin: `marcel.majsan@gmail.com` — trigger dodjeljuje ulogu automatski.
+- Admini kreiraju korisnike u `/admin/settings`.
 
 ## 2. Stack
 
-- Next.js 14+ (App Router, TypeScript, Server Actions)
-- Supabase (Postgres + Auth + RLS)
-- Vercel (deploy) — privremena domena **ehmi.vercel.app**; GitHub (repo)
-- Anthropic API (chat, samo admin) — provjeri aktualni model string
-- Tailwind + recharts (ili chart.js) za grafove
+- **Next.js 16** (App Router, TypeScript, Tailwind, `src/`, `vercel.json` s `"framework":"nextjs"`)
+- **Supabase** (Postgres + Auth + RLS) — projekt `titurqsqvgkwkbmzzujq`
+- **Vercel** — automatski deploy iz GitHub `main` grane
+- **Anthropic API** — `claude-sonnet-4-6`, text-to-SQL na `/api/query`
+- **recharts** — grafovi u Overview i Svi rezultati
 
-## 3. Podaci — već pripremljeni
+## 3. Env varijable
 
-Sirovi CSV je očišćen i pretvoren u migracije skriptom `import_survey.py`.
-Ne diraj ručno; ako stigne novi export, ponovo pokreni skriptu.
+```
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=          # legacy JWT key
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=   # novi sb_publishable_... key
+SUPABASE_SERVICE_ROLE_KEY=
+ANTHROPIC_API_KEY=
+```
 
-Generirani fileovi:
-- `supabase/migrations/0001_schema.sql` — tablice, uloge, helperi, RLS  → **git**
-- `supabase/migrations/0002_seed_data.sql` — anketni podaci bez PII       → **git**
-- `supabase/seed_private.sql` — PII (email/ime/IP/URL)                    → **NIKAD u git**
-
-Što je skripta napravila:
-- Uklonila `"...\n\nScore: x/3"` sufikse iz svih vrijednosti.
-- Klasificirala pitanja: 14 single-select, 17 multi-select, 2 slobodni tekst.
-- PII (email, ime, prezime, IP, adresa webshopa) izdvojila u zasebnu,
-  admin-only tablicu `respondent_pii`.
+Postavljene na Vercelu (Production + Preview) i lokalno u `.env.local`.
 
 ## 4. Shema baze
 
-- **`app_users`** (`user_id`, `email`, `role` ∈ {admin, partner}, `created_by`) —
-  tko ima pristup i s kojom ulogom.
-- **`questions`** (`key`, `ordinal`, `label`, `type`, `options` jsonb) —
-  metapodaci; koriste ih i UI i LLM (zna nazive pitanja i dozvoljene opcije).
-- **`responses`** (1 red = 1 ispitanik) — single-select pitanja kao text stupci
-  (npr. `q29_godisnji_bruto_promet_...`, `q02_imate_li_fizicku_poslovnicu`) +
-  2 text stupca. **RLS: samo admin.**
-- **`response_options`** (`respondent_id`, `question_key`, `option_value`) —
-  long tablica za multi-select (jedan red po odabranoj opciji). **RLS: samo admin.**
-- **`question_aggregates`** (`question_key`, `option_value`, `count`) —
-  prebrojano, anonimno. **RLS: čita svaki prijavljeni (admin i partner).**
-- **`respondent_pii`** (`respondent_id`, `email`, ..., `webshop_url`) —
-  **RLS: samo admin**, izvan dosega chata.
+| Tablica | Opis | RLS |
+|---------|------|-----|
+| `app_users` | user_id, email, role (admin/partner), created_by | vlastiti red + admin vidi sve |
+| `questions` | key, ordinal, label, type, options jsonb | čita svaki prijavljeni |
+| `responses` | 1 red = 1 ispitanik, single-select stupci | **samo admin** |
+| `response_options` | respondent_id, question_key, option_value (multi-select) | **samo admin** |
+| `question_aggregates` | question_key, option_value, count | čita svaki prijavljeni |
+| `respondent_pii` | email, ime, IP, webshop_url | **samo admin** |
 
-Helper funkcije u bazi: `is_admin()`, `is_member()` (SECURITY DEFINER,
-koriste se u RLS politikama).
+Helper funkcije: `is_admin()`, `is_member()` (SECURITY DEFINER).  
+RPC funkcija: `execute_analyst_query(query_text text) returns jsonb` — izvršava read-only SQL bez PostgREST row-limit ograničenja.
 
-## 5. Auth & upravljanje korisnicima
+## 5. Stranice
 
-- Supabase Auth (email + password ili magic link).
-- Trigger na `auth.users` automatski ubaci red u `app_users`; ako je email
-  jednak bootstrap adminu → role `admin`, inače `partner`.
-- Stranica `/admin/users` (samo admin):
-  - lista korisnika i uloga,
-  - "Dodaj korisnika" → Server Action: `supabaseAdmin.auth.admin.inviteUserByEmail`
-    + postavi ulogu u `app_users` (`created_by = auth.uid()`). `service_role`
-    ključ SAMO na serveru.
-  - promjena uloge / deaktivacija (osim bootstrap admina).
-- Middleware: sve osim `/login` traži sesiju; admin rute dodatno traže `is_admin`.
+### Sažetak (`/`) — admin + partner
+- 5 hero KPI kartica: Ispitanika · Promet>500k€ · Posjeti>100k/mj · Prodaju van RH · Imaju poslovnicu
+- 6 tematskih sekcija s opisnim tekstom + recharts grafovi iz `question_aggregates`
+- Sekcije: Profil · Platforme i hosting · Plaćanje · Dostava · Marketing · Tehnologija
 
-## 6. Stranice / tabovi
+### Svi rezultati (`/pitanja`) — admin + partner
+- Grid kartica po pitanju s grafom iz `question_aggregates`
+- Pie za ≤4 opcije, Bar za više
 
-Glavna navigacija: **Overview · Pitanja · Istraži (admin) · Chat (admin) · Korisnici (admin)**
+### Istraži korelacije (`/explore`) — admin + partner
+- Text-to-SQL via Claude API → `/api/query`
+- Admin: puni pristup (`responses`, `response_options`, `question_aggregates`)
+- Partner: samo `question_aggregates`
+- 4 primjera korelacija kao kliktabilne kartice
+- Prikazuje: analiza (tekst) + tablica podataka + SQL (collapsible)
+- SQL validacija: blacklist `respondent_pii`, destructive statements; za partnera + blacklist `responses`/`response_options`
 
-### 6.1 Overview (`/`) — vidljiv admin + partner
-Uvodni, editorijalni prikaz po temama, kao narativni "Croatia eCommerce overview",
-ali isključivo s **agregiranim** podacima iz istraživanja (iz `question_aggregates`,
-nikad iz `responses`). Struktura:
+### Korisnici (`/admin/users`) — samo admin
+- Tablica 173 ispitanika s filtri: Promet · Posjeti · Košarica · Član udruge
+- Pretraga po email/URL
+- Klik na red → prošireni prikaz SVIH odgovora Q1–Q30 (Q31 skriven)
+- Multi-select odgovori iz `response_options` — učitava se via RPC (zaobilazi PostgREST 1000-row cap)
 
-- **Hero / top-line KPI kartice:** ukupno ispitanika (173), % s godišnjim prometom
-  > 500.000 € (q29), % koji prodaje van RH (q01), % s fizičkom poslovnicom (q02),
-  % koji koristi AI alate (q24).
-- **Tematske sekcije** (svaka = kratki opisni odlomak + 1–2 grafa/“stat callout”
-  iz agregata):
-  1. **Profil trgovina:** promet `q29`, udio web trgovine u prodaji `q28`,
-     broj proizvoda `q06`, prosječna košarica `q27`, mjesečni posjeti `q21`.
-  2. **Platforme i hosting:** `q04` (platforma), `q05` (hosting) — top N + “ostalo”.
-  3. **Plaćanje:** mogućnosti `q15`, gateway `q16`, najvažnije kod providera `q17`,
-     izazovi naplate `q18`.
-  4. **Dostava i logistika:** način dostave `q10`, naplata dostave `q12`,
-     skladištenje `q13`, izazovi fulfillmenta `q14`, prednosti paketomata `q11`.
-  5. **Marketing i kupci:** oglašavanje `q19`, kanali komunikacije `q20`,
-     recenzije `q22`, fizičke poslovnice `q02`/`q03`.
-  6. **Tehnologija i zajednica:** AI da/ne `q24`, za što AI `q25`,
-     certifikacija `q23`, članstvo u udruzi `q30`.
-- Opisni tekst sekcija je kuriran (statičan), a brojke se interpoliraju iz
-  agregata — tako je uvijek točno i brzo, bez LLM poziva. Visok-kardinalna
-  multi pitanja (hosting, kategorije, AI namjene) prikaži kao **Top 8 + “ostalo”**.
-- Postotak = `count / Σ count po pitanju`.
+### Postavke (`/admin/settings`) — samo admin
+- Forma za dodavanje korisnika: email + privremena lozinka + uloga (Admin/Partner)
+- Lista svih korisnika s ulogom i datumom kreiranja
 
-### 6.2 Pitanja (`/pitanja`) — vidljiv admin + partner
-Kartica po pitanju iz `questions` s grafom iz `question_aggregates` (pregled svih
-pitanja, bez narativa).
+## 6. i18n (HR/EN)
 
-### 6.3 Istraži (`/explore`) — SAMO admin
-Tablica/filtri nad `responses` + join na `response_options` za uvid po ispitaniku.
+- `src/translations/index.ts` — UI stringovi (nav, KPI labeli, sekcijski opisi)
+- `src/translations/survey-data.ts` — mapa opcija ankete HR→EN + nazivi pitanja
+- `src/lib/lang-context.tsx` — cookie-based, default **HR**
+- Toggle EN|HR u navigaciji, pamti se u cookieju (`ehmi_lang`)
 
-### 6.4 Chat (`/chat`) — SAMO admin
-Vidi sekciju 7.
+## 7. API rute
 
-### 6.5 Korisnici (`/admin/users`) — SAMO admin
-Vidi sekciju 5.
+### POST `/api/query`
+- Auth check: prijavljeni korisnik s rolom (admin ili partner)
+- Učitava schema iz `questions` tablice
+- Claude generira SQL → validacija → `execute_analyst_query` RPC → Claude formatira odgovor
+- Partner: ograničeni system prompt (samo `question_aggregates`) + SQL blacklist
 
-## 7. Chat za korelacije — `/api/chat` (SAMO ADMIN)
+## 8. Navigacija
 
-Route handler na početku provjeri `is_admin()` (server-side); partner dobije 403.
+Logo (SVG chart ikona + naziv) → klik vodi na `/`  
+Stavke: **Sažetak · Svi rezultati · Istraži korelacije** (svi) | **Korisnici · Postavke** (admin)  
+Mobile: hamburger meni (≥768px desktop layout)
 
-Tijek (text-to-SQL):
-1. Učitaj shemu iz `questions` (key → label → type → options) u system prompt,
-   plus mapu: single-select = stupac u `responses`; multi-select = redovi u
-   `response_options` (filtriraj `question_key` + `option_value`).
-2. Pozovi Claude API → generira **jedan read-only PostgreSQL SELECT**.
-3. Validacija prije izvršavanja:
-   - mora počinjati sa `select`, jedan statement,
-   - blacklist `insert|update|delete|drop|alter|create|grant|truncate|copy`,
-   - izvrši kroz **read-only Postgres role** (ili RPC sa `SET TRANSACTION READ ONLY`),
-     uz `statement_timeout` i `LIMIT`.
-4. Drugi poziv Claudeu: proslijedi rezultat → odgovor na hrvatskom + brojevi.
-5. `respondent_pii` NIKAD ne ulazi u shemu koju chat vidi.
+## 9. Sigurnost
 
-Provjereni primjer (radi nad ovom shemom):
-> "Koliko trgovina s prometom > 500.000 € ima fizičku poslovnicu?"
-> → 55 trgovina s prometom > 500k; od toga 38 ima poslovnicu (DA), 16 nema, 1 planira.
-```sql
-select q02_imate_li_fizicku_poslovnicu, count(*)
-from responses
-where q29_godisnji_bruto_promet_vaseg_webshopa_izn
-      in ('500.000 - 1.000.000 eura','Više od 1.000.000 eura')
-group by 1;
+- RLS na SVIM tablicama
+- `service_role` ključ samo na serveru (Server Actions, `/api/query`, `/admin/settings`)
+- `respondent_pii` nikad u Claude system promptu
+- SQL blacklist: `insert|update|delete|drop|alter|create|grant|truncate|copy|respondent_pii`
+- `seed_private.sql` nikad u gitu (`.gitignore`)
+
+## 10. Migracije i seed
+
+```
+supabase/migrations/0001_schema.sql     # tablice, RLS, trigeri → git
+supabase/migrations/0002_seed_data.sql  # pitanja, odgovori, agregati → git
+supabase/seed_private.sql              # PII → NIKAD u git
+supabase/execute_analyst_query.sql     # RPC funkcija → git
 ```
 
-> Anthropic API se NIKAD ne zove iz clienta. Ključ u Vercel env varijabli.
-> Rate-limit `/api/chat` po korisniku da se ne troši budžet.
+Primjena: `npx supabase db push --linked` (token u `SUPABASE_ACCESS_TOKEN`)
 
-## 8. Tijek rada u Claude Code
+## 11. Sljedeći milestoni
 
-1. `create-next-app` (TS, App Router, Tailwind) + Supabase klijent
-   (browser + server) + middleware skeleton.
-2. Primijeni migracije: `0001_schema.sql`, `0002_seed_data.sql`
-   (`supabase db push` ili kroz SQL editor). PII učitaj lokalno:
-   `supabase db execute --file supabase/seed_private.sql`. Dodaj
-   `supabase/seed_private.sql` u `.gitignore`.
-3. Auth flow: `/login`, middleware (sesija + uloga iz `app_users`).
-4. **Overview tab** (`/`) iz `question_aggregates`: hero KPI + tematske sekcije
-   (sekcija 6.1) + `/pitanja` pregled. Ovo je prvi vidljivi milestone na ehmi.vercel.app.
-5. `/admin/users`: lista + invite + uloga + deaktivacija.
-6. `/explore` (admin): tablica nad `responses` + join na `response_options`.
-7. Chat `/api/chat` (admin-only, text-to-SQL po sekciji 7).
-8. Polish, error handling, rate limit, deploy na Vercel.
-
-## 9. Sigurnost (praksa kao na EventOrganizzeru)
-
-- RLS uključen na SVIM tablicama u `public` schemi (već u `0001_schema.sql`).
-- `service_role` ključ samo na serveru.
-- Read-only role + blacklist + timeout + LIMIT za text-to-SQL.
-- `seed_private.sql` (PII) nikad u git; razmotri brisanje/maskiranje IP-a ako
-  nije potreban (GDPR — minimizacija podataka).
-- Rate-limit na `/api/chat`.
+- `/admin/users` — promjena uloge / deaktivacija korisnika
+- `/explore` — rate limiting po korisniku
+- `/explore` — povijest upita (conversation memory)
+- Polish: error boundaries, loading skeletons
