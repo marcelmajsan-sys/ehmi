@@ -253,31 +253,30 @@ export function RespondentsContent({ responses, rOptions, pii, questions }: Prop
                               <span>📅 {shortDate(r.submitted_at)}</span>
                             </div>
                           )}
-                          {/* All answers */}
+                          {/* All answers Q1–Q31 in ordinal order */}
                           <div className="grid sm:grid-cols-2 gap-x-8 gap-y-3">
-                            {questions.filter(q => q.type !== 'text').map(q => {
+                            {questions.map(q => {
+                              const label = isEn ? translateLabel(q.label) : q.label
+                              if (q.type === 'text') {
+                                const v = r[q.key]
+                                if (!v || typeof v !== 'string') return null
+                                return (
+                                  <div key={q.key} className="sm:col-span-2">
+                                    <p className="text-xs font-medium text-gray-500 mb-0.5">
+                                      Q{q.ordinal} · {label}
+                                    </p>
+                                    <p className="text-sm text-gray-900 italic">"{v}"</p>
+                                  </div>
+                                )
+                              }
                               const ans = getAnswer(r, q.key, optionsMap, lang)
                               if (ans === '—') return null
-                              const label = isEn ? translateLabel(q.label) : q.label
                               return (
                                 <div key={q.key}>
                                   <p className="text-xs font-medium text-gray-500 mb-0.5">
                                     Q{q.ordinal} · {label}
                                   </p>
                                   <p className="text-sm text-gray-900">{ans}</p>
-                                </div>
-                              )
-                            })}
-                            {questions.filter(q => q.type === 'text').map(q => {
-                              const v = r[q.key]
-                              if (!v || typeof v !== 'string') return null
-                              const label = isEn ? translateLabel(q.label) : q.label
-                              return (
-                                <div key={q.key} className="sm:col-span-2">
-                                  <p className="text-xs font-medium text-gray-500 mb-0.5">
-                                    Q{q.ordinal} · {label}
-                                  </p>
-                                  <p className="text-sm text-gray-900 italic">"{v}"</p>
                                 </div>
                               )
                             })}
