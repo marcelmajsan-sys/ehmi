@@ -36,6 +36,9 @@ yarn-error.log*
 # PII — never in git
 supabase/seed_private.sql
 
+# supabase CLI local temp
+supabase/.temp/
+
 # vercel
 .vercel
 
