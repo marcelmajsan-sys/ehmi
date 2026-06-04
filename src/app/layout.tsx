@@ -1,8 +1,11 @@
 import type { Metadata } from 'next'
 import { Geist } from 'next/font/google'
+import { cookies } from 'next/headers'
 import './globals.css'
 import { Nav } from '@/components/Nav'
+import { LangProvider } from '@/lib/lang-context'
 import { getCurrentUser } from '@/lib/auth'
+import type { Lang } from '@/translations'
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -11,21 +14,26 @@ const geistSans = Geist({
 
 export const metadata: Metadata = {
   title: 'eCommerce Hrvatska Market Insights',
-  description: 'Istraživanje web trgovina 2026 — eCommerce Hrvatska',
+  description: 'Croatian web shop survey 2026 — eCommerce Hrvatska',
 }
 
 export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   const currentUser = await getCurrentUser()
+  const cookieStore = await cookies()
+  const langCookie = cookieStore.get('ehmi_lang')?.value
+  const initialLang: Lang = langCookie === 'hr' ? 'hr' : 'en'
 
   return (
-    <html lang="hr" className={`${geistSans.variable} h-full antialiased`}>
+    <html lang={initialLang} className={`${geistSans.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col bg-gray-50">
-        {currentUser && (
-          <Nav email={currentUser.user.email ?? ''} role={currentUser.role} />
-        )}
-        <main className="flex-1">{children}</main>
+        <LangProvider initial={initialLang}>
+          {currentUser && (
+            <Nav email={currentUser.user.email ?? ''} role={currentUser.role} />
+          )}
+          <main className="flex-1">{children}</main>
+        </LangProvider>
       </body>
     </html>
   )

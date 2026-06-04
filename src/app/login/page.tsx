@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { useLang } from '@/lib/lang-context'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -10,6 +11,7 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const router = useRouter()
+  const { t } = useLang()
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -37,7 +39,7 @@ export default function LoginPage() {
           <p className="text-gray-500 mt-1 text-sm">Market Insights 2026</p>
         </div>
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-          <h2 className="text-base font-semibold text-gray-900 mb-5">Sign in</h2>
+          <h2 className="text-base font-semibold text-gray-900 mb-5">{t.login.heading}</h2>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -54,7 +56,7 @@ export default function LoginPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Password
+                {t.login.password}
               </label>
               <input
                 type="password"
@@ -73,7 +75,7 @@ export default function LoginPage() {
               disabled={loading}
               className="w-full py-2 px-4 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
             >
-              {loading ? 'Signing in…' : 'Sign in'}
+              {loading ? t.login.submitting : t.login.submit}
             </button>
           </form>
         </div>
