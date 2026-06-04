@@ -25,7 +25,7 @@ export default async function PitanjaPage() {
   if (!questions || !aggs) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-12 text-center text-gray-500">
-        Greška pri učitavanju podataka.
+        Error loading data.
       </div>
     )
   }
@@ -34,8 +34,8 @@ export default async function PitanjaPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <h1 className="text-2xl font-bold text-gray-900 mb-2">Pitanja</h1>
-      <p className="text-gray-500 mb-8">Pregled svih pitanja i agregiranih odgovora</p>
+      <h1 className="text-2xl font-bold text-gray-900 mb-2">Questions</h1>
+      <p className="text-gray-500 mb-8">All survey questions with aggregated responses</p>
 
       <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-6">
         {dataQuestions.map(q => {

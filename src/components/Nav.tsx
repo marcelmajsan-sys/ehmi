@@ -8,10 +8,10 @@ type NavProps = { email: string; role: 'admin' | 'partner' }
 
 const TABS = [
   { href: '/', label: 'Overview', adminOnly: false },
-  { href: '/pitanja', label: 'Pitanja', adminOnly: false },
-  { href: '/explore', label: 'Istraži', adminOnly: true },
+  { href: '/pitanja', label: 'Questions', adminOnly: false },
+  { href: '/explore', label: 'Explore', adminOnly: true },
   { href: '/chat', label: 'Chat', adminOnly: true },
-  { href: '/admin/users', label: 'Korisnici', adminOnly: true },
+  { href: '/admin/users', label: 'Users', adminOnly: true },
 ]
 
 export function Nav({ email, role }: NavProps) {
@@ -59,7 +59,7 @@ export function Nav({ email, role }: NavProps) {
               onClick={handleLogout}
               className="text-sm text-gray-500 hover:text-gray-900 transition-colors"
             >
-              Odjava
+              Sign out
             </button>
           </div>
         </div>

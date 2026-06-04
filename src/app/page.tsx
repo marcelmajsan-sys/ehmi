@@ -107,117 +107,116 @@ export default async function OverviewPage() {
       {/* Hero */}
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-900 mb-1">
-          Istraživanje web trgovina 2026
+          Croatian Web Shop Survey 2026
         </h1>
         <p className="text-gray-500 mb-6">
-          Pregled ključnih nalaza — eCommerce Hrvatska
+          Key findings — eCommerce Hrvatska
         </p>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-          <KpiCard label="Ispitanika" value="173" />
-          <KpiCard label="Promet &gt; 500k €" value={`${pctPromet500k}%`} />
-          <KpiCard label="Prodaju van RH" value={`${pctVanRH}%`} />
-          <KpiCard label="Imaju poslovnicu" value={`${pctPlosc}%`} />
-          <KpiCard label="Koriste AI" value={`${pctAI}%`} />
+          <KpiCard label="Respondents" value="173" />
+          <KpiCard label="Revenue &gt; €500k" value={`${pctPromet500k}%`} />
+          <KpiCard label="Sell outside Croatia" value={`${pctVanRH}%`} />
+          <KpiCard label="Have physical store" value={`${pctPlosc}%`} />
+          <KpiCard label="Use AI tools" value={`${pctAI}%`} />
         </div>
       </div>
 
       {/* 1. Profil */}
-      <Section title="1. Profil trgovina">
+      <Section title="1. Shop Profiles">
         <div className="grid md:grid-cols-2 gap-8">
           <div>
             <p className="text-sm text-gray-600 leading-relaxed mb-5">
-              Istraživanje obuhvaća 173 web trgovine iz Hrvatske. Dominiraju manji webshopovi,
-              no <strong>{pctPromet500k}%</strong> ispitanika bilježi godišnji promet iznad 500.000 €,
-              što svjedoči o zrelosti dijela sektora. <strong>{pctOnline100}%</strong> ispitanika
-              prodaje isključivo online, dok ostatak kombinira fizičku i online prodaju.
-              Najpopularnija platforma je <strong>{topPlatforma}</strong>.
+              The survey covers 173 web shops from Croatia. Small webshops dominate, yet{' '}
+              <strong>{pctPromet500k}%</strong> of respondents report annual revenue above €500,000,
+              reflecting the maturity of part of the sector. <strong>{pctOnline100}%</strong> sell
+              exclusively online, while the rest combine physical and online sales.
+              The most popular platform is <strong>{topPlatforma}</strong>.
             </p>
-            <SurveyBarChart data={q29} title="Godišnji bruto promet webshopa" color="#2563eb" />
+            <SurveyBarChart data={q29} title="Annual gross revenue" color="#2563eb" />
           </div>
-          <SurveyPieChart data={q28} title="Udio web trgovine u ukupnoj prodaji" />
+          <SurveyPieChart data={q28} title="Share of online in total sales" />
         </div>
       </Section>
 
       {/* 2. Platforme */}
-      <Section title="2. Platforme i hosting">
+      <Section title="2. Platforms & Hosting">
         <div className="grid md:grid-cols-2 gap-8">
           <div>
             <p className="text-sm text-gray-600 leading-relaxed mb-5">
-              Slika platformi je šarolika — zastupljeno je više od desetak različitih rješenja.
-              Na hostinškoj strani vlada sličan pluralizam, a mnogi se oslanjaju
-              na domaće davatelje usluga ili specijalizirana SaaS rješenja.
+              The platform landscape is diverse — more than a dozen different solutions are in use.
+              Hosting providers show similar variety, with many shops relying on domestic
+              providers or specialised SaaS solutions.
             </p>
-            <SurveyBarChart data={q04} title="Platforma webshopa (top 8)" color="#7c3aed" />
+            <SurveyBarChart data={q04} title="Webshop platform (top 8)" color="#7c3aed" />
           </div>
-          <SurveyBarChart data={q05} title="Hosting (top 8)" color="#0891b2" />
+          <SurveyBarChart data={q05} title="Hosting provider (top 8)" color="#0891b2" />
         </div>
       </Section>
 
       {/* 3. Plaćanje */}
-      <Section title="3. Plaćanje">
+      <Section title="3. Payments">
         <div className="grid md:grid-cols-2 gap-8">
           <div>
             <p className="text-sm text-gray-600 leading-relaxed mb-5">
-              Kod odabira payment providera ispitanici najčešće ističu sigurnost,
-              pouzdanost i jednostavnost integracije kao ključne kriterije.
-              Vodeći payment gateway provajderi su lokalna rješenja
-              uz prisutnost globalnih igrača.
+              When selecting a payment provider, respondents most often highlight security,
+              reliability, and ease of integration as key criteria. Leading payment gateways
+              are a mix of local solutions and global players.
             </p>
             <SurveyBarChart data={q16} title="Payment gateway provider (top 8)" color="#16a34a" />
           </div>
-          <SurveyBarChart data={q17} title="Najvažnije kod odabira providera (top 8)" color="#ca8a04" />
+          <SurveyBarChart data={q17} title="Most important provider criteria (top 8)" color="#ca8a04" />
         </div>
       </Section>
 
       {/* 4. Dostava */}
-      <Section title="4. Dostava i logistika">
+      <Section title="4. Delivery & Logistics">
         <div className="grid md:grid-cols-2 gap-8">
           <div>
             <p className="text-sm text-gray-600 leading-relaxed mb-5">
-              Dostavu na kućnu adresu nudi <strong>{pctDostavaKuca}%</strong> webshopova,
-              a paketomati bilježe rast popularnosti. Ključni izazovi u fulfillmentu
-              su upravljanje zalihama, sezonski peakovi i povrati.
-              Naplata dostave najčešće iznosi između 3 i 5 eura.
+              <strong>{pctDostavaKuca}%</strong> of webshops offer home delivery, while parcel
+              lockers are growing in popularity. Key fulfilment challenges include inventory
+              management, seasonal peaks, and returns. Most shops charge between €3 and €5
+              for delivery.
             </p>
-            <SurveyBarChart data={q10} title="Načini dostave" color="#dc2626" />
+            <SurveyBarChart data={q10} title="Delivery methods" color="#dc2626" />
           </div>
-          <SurveyBarChart data={q12} title="Naplata dostave" color="#ea580c" />
+          <SurveyBarChart data={q12} title="Delivery pricing" color="#ea580c" />
         </div>
       </Section>
 
       {/* 5. Marketing */}
-      <Section title="5. Marketing i kupci">
+      <Section title="5. Marketing & Customers">
         <div className="grid md:grid-cols-2 gap-8">
           <div>
             <p className="text-sm text-gray-600 leading-relaxed mb-5">
-              Google i Facebook ostaju ključni marketinški kanali —
-              Google oglašavanje koristi <strong>{pctGoogle}%</strong> ispitanika.
-              U komunikaciji s kupcima dominira email, a recenzije se prikupljaju
-              putem Google Reviews i specijaliziranih alata.
+              Google and Facebook remain the dominant marketing channels —{' '}
+              <strong>{pctGoogle}%</strong> of respondents use Google advertising.
+              Email leads customer communication, and reviews are collected primarily
+              via Google Reviews and specialised tools.
             </p>
-            <SurveyBarChart data={q19} title="Kanali oglašavanja (top 8)" color="#2563eb" />
+            <SurveyBarChart data={q19} title="Advertising channels (top 8)" color="#2563eb" />
           </div>
-          <SurveyBarChart data={q20} title="Komunikacija s kupcima (top 8)" color="#7c3aed" />
+          <SurveyBarChart data={q20} title="Customer communication channels (top 8)" color="#7c3aed" />
         </div>
       </Section>
 
       {/* 6. Tehnologija */}
-      <Section title="6. Tehnologija i zajednica">
+      <Section title="6. Technology & Community">
         <div className="grid md:grid-cols-2 gap-8">
           <div>
             <p className="text-sm text-gray-600 leading-relaxed mb-5">
-              <strong>{pctAI}%</strong> ispitanika koristi AI alate u svakodnevnom poslovanju —
-              uglavnom za izradu sadržaja, opise proizvoda i prijevode.
-              Certifikaciju webshopa provelo je <strong>{pctCert}%</strong>,
-              a <strong>{pctClan}%</strong> je aktivni član udruge eCommerce Hrvatska.
+              <strong>{pctAI}%</strong> of respondents use AI tools in daily operations —
+              primarily for content creation, product descriptions, and translations.{' '}
+              <strong>{pctCert}%</strong> have certified their webshop, and{' '}
+              <strong>{pctClan}%</strong> are active members of the eCommerce Hrvatska association.
             </p>
-            <SurveyPieChart data={q24} title="Korištenje AI alata" />
+            <SurveyPieChart data={q24} title="AI tool usage" />
           </div>
           <div className="space-y-6">
-            <SurveyBarChart data={q25} title="Za što se koriste AI alati (top 8)" color="#16a34a" />
+            <SurveyBarChart data={q25} title="AI tool use cases (top 8)" color="#16a34a" />
             <div className="grid grid-cols-2 gap-4">
-              <SurveyPieChart data={q23} title="Certifikacija" />
-              <SurveyPieChart data={q30} title="Članstvo u udruzi" />
+              <SurveyPieChart data={q23} title="Webshop certification" />
+              <SurveyPieChart data={q30} title="Association membership" />
             </div>
           </div>
         </div>
