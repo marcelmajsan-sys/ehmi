@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-const ADMIN_PATHS = ['/explore', '/chat', '/admin']
+const ADMIN_PATHS = ['/chat', '/admin']
 
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
