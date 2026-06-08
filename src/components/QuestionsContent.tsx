@@ -9,10 +9,14 @@ type Question = { key: string; ordinal: number; label: string; type: string }
 type Agg = { question_key: string; option_value: string; count: number }
 type OtherAnswer = { question_key: string; answer_value: string; count: number }
 
-function buildChartData(aggs: Agg[], key: string): ChartItem[] {
+// Free-text "Ostalo" write-ins are excluded from the bars (they belong only in
+// the "Ostalo" breakdown), but stay in `total` so predefined-option percentages
+// are unchanged.
+function buildChartData(aggs: Agg[], key: string, exclude: Set<string>): ChartItem[] {
   const items = aggs.filter(a => a.question_key === key)
   const total = items.reduce((s, a) => s + a.count, 0)
   return items
+    .filter(a => !exclude.has(a.option_value))
     .map(a => ({ option_value: a.option_value, count: a.count, pct: total > 0 ? Math.round((a.count / total) * 100) : 0 }))
     .sort((a, b) => b.count - a.count)
     .slice(0, 12)
@@ -47,14 +51,15 @@ export function QuestionsContent({ questions, aggs, otherAnswers = [] }: Props) 
 
       <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-6">
         {dataQuestions.map(q => {
-          const rawData = buildChartData(aggs, q.key)
+          const others = otherByKey.get(q.key) ?? []
+          const otherValues = new Set(others.map(o => o.answer_value))
+          const rawData = buildChartData(aggs, q.key, otherValues)
           if (rawData.length === 0) return null
           const data = lang === 'en'
             ? rawData.map(i => ({ ...i, option_value: translateOption(i.option_value) }))
             : rawData
           const label = lang === 'en' ? translateLabel(q.label) : q.label
           const isPie = data.length <= 4
-          const others = otherByKey.get(q.key) ?? []
           const otherTotal = others.reduce((s, o) => s + o.count, 0)
 
           return (
