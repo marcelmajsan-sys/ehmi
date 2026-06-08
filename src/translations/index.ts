@@ -31,6 +31,7 @@ const en = {
     password: 'Password',
     submit: 'Sign in',
     submitting: 'Signing in…',
+    contact: 'If you have questions or wish to change your password, email us at: marcel@ecommerce.hr',
   },
   overview: {
     title: 'Croatian Web Shop Survey 2026',
@@ -113,8 +114,9 @@ const hr: typeof en = {
   login: {
     heading: 'Prijava',
     password: 'Lozinka',
-    submit: 'Prijava',
+    submit: 'Prijavi se',
     submitting: 'Prijava...',
+    contact: 'Ako imate pitanja ili želite promijeniti lozinku, javite se na mail: marcel@ecommerce.hr',
   },
   overview: {
     title: 'Istraživanje web trgovina 2026',

@@ -85,7 +85,13 @@ export default function LoginPage() {
               {loading ? t.login.submitting : t.login.submit}
             </button>
           </form>
+          <p className="text-xs text-gray-400 text-center mt-5 pt-5 border-t border-gray-100">
+            {t.login.contact}
+          </p>
         </div>
+        <p className="text-center text-xs text-gray-400 mt-6">
+          Powered by Ecommerce d.o.o. © 2026
+        </p>
       </div>
     </div>
   )
