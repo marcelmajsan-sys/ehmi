@@ -2,39 +2,20 @@
 
 import { useState } from 'react'
 import { useLang } from '@/lib/lang-context'
-
-const EXAMPLES = [
-  {
-    hr: 'Koje načine dostave biraju trgovci ovisno o prosječnom iznosu košarice?',
-    en: 'Which delivery methods do merchants choose by average cart value?',
-  },
-  {
-    hr: 'Koji hosting koriste WooCommerce trgovci?',
-    en: 'Which hosting providers do WooCommerce merchants use?',
-  },
-  {
-    hr: 'Koji se kanali oglašavanja koriste po broju mjesečnih posjeta?',
-    en: 'Which advertising channels are used by monthly visit count?',
-  },
-  {
-    hr: 'U koje svrhe trgovci koriste AI alate ovisno o svom godišnjem prometu?',
-    en: 'For what purposes do merchants use AI tools by their annual revenue?',
-  },
-  {
-    hr: 'Koliko trgovaca koristi WooCommerce?',
-    en: 'How many merchants use WooCommerce?',
-  },
-  {
-    hr: 'Koji je prosječni godišnji promet po platformi?',
-    en: 'What is the average annual revenue per platform?',
-  },
-]
+import { EXAMPLES } from '@/data/explore-examples'
+import cachedAnswers from '@/data/explore-cache.json'
 
 type QueryResult = {
   sql: string
   rows: Record<string, unknown>[]
   analysis: string
 }
+
+// Precomputed answers for the example questions → instant render, no API call.
+const CACHE = new Map<string, QueryResult>(
+  (cachedAnswers as { question: string; sql: string; rows: Record<string, unknown>[]; analysis: string }[])
+    .map(a => [a.question.trim().toLowerCase(), { sql: a.sql, rows: a.rows, analysis: a.analysis }])
+)
 
 function DataTable({ rows }: { rows: Record<string, unknown>[] }) {
   if (!rows.length) return <p className="text-sm text-gray-500">No results.</p>
@@ -76,8 +57,15 @@ export default function ExplorePage() {
 
   async function ask(q: string) {
     if (!q.trim()) return
-    setLoading(true)
     setError('')
+    // Instant answer for precomputed example questions.
+    const hit = CACHE.get(q.trim().toLowerCase())
+    if (hit) {
+      setResult(hit)
+      setLoading(false)
+      return
+    }
+    setLoading(true)
     setResult(null)
     try {
       const res = await fetch('/api/query', {

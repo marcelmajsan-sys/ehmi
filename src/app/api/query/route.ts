@@ -2,13 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { createClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
-
-const BLACKLIST_ALWAYS = /\b(insert|update|delete|drop|alter|create|grant|truncate|copy|respondent_pii)\b/i
-const BLACKLIST_PARTNER = /\b(responses|response_options)\b/i
-
-function stripCodeFence(s: string): string {
-  return s.replace(/^```(?:sql)?\n?/i, '').replace(/\n?```$/i, '').trim().replace(/;+$/, '')
-}
+import { runAnalystQuery, AnalystError, type Role } from '@/lib/analyst'
 
 type QueryLogRow = {
   user_id: string
@@ -30,89 +24,6 @@ async function logQuery(row: QueryLogRow) {
   }
 }
 
-function buildSystemPrompt(role: 'admin' | 'partner', schemaLines: string): string {
-  if (role === 'partner') {
-    return `You are a PostgreSQL analyst for a Croatian eCommerce survey (173 respondents).
-
-You only have access to the pre-aggregated table:
-• question_aggregates — columns: question_key (text), option_value (text), count (integer)
-
-Survey questions (use question_key to filter):
-${schemaLines}
-
-Rules:
-1. Return ONLY a single valid SQL SELECT. No explanation, no markdown.
-2. Query ONLY the question_aggregates table.
-3. Always end with LIMIT 50.`
-  }
-
-  return `You are a PostgreSQL analyst for a Croatian eCommerce survey (173 respondents).
-
-Tables:
-• responses — one row per respondent. Single-select columns: q01_..., q02_..., q06_..., q12_..., q21_..., q23_..., q24_..., q26_..., q27_..., q28_..., q29_..., q30_..., q31_...
-• response_options — multi-select: respondent_id (uuid), question_key (text), option_value (text)
-• question_aggregates — pre-counted: question_key, option_value, count (use for aggregate-only queries)
-
-Survey questions:
-${schemaLines}
-
-IMPORTANT — ordinal "bucket" columns are stored as TEXT ranges, not numbers.
-To compute an average/numeric aggregate over them, map each bucket to a numeric
-midpoint with CASE and ignore "Ne znam/nisam siguran" (treat as NULL):
-
-• q29 (godišnji promet, €):
-  'do 40.000 eura'→20000, '40.000 - 100.000 eura'→70000,
-  '100.000 - 200.000 eura'→150000, '200.000 - 500.000 eura'→350000,
-  '500.000 - 1.000.000 eura'→750000, 'Više od 1.000.000 eura'→1500000
-• q21 (mjesečni posjeti):
-  'Do 10.000'→5000, '10.000 - 20.000'→15000, '20.000 - 50.000'→35000,
-  '50.000 - 100.000'→75000, 'Više od 100.000'→150000
-• q27 (prosječna košarica, €):
-  'Do 50 €'→25, '50 do 100 €'→75, '100 do 200€'→150,
-  '200 do 500€'→350, '500 do 1000€'→750, 'Više od 1000€'→1500
-
-IMPORTANT — free-text "other" answers:
-Multi-select questions let respondents type a custom answer under the
-"Nešto drugo"/"Ostalo" marker. Those raw answers are NOT in the options list
-above — they are stored verbatim as extra rows in response_options.option_value
-for that question_key. So a brand/keyword the user asks about (e.g. a courier,
-tool or platform) may only exist as free text. When the user names something
-that is not a listed option, search response_options.option_value with a
-case-insensitive ILIKE '%keyword%' instead of an exact match, and remember
-spelling/spacing varies (e.g. "InTime", "IN Time", "in time"); match on the
-core letters and use OR-ed ILIKE patterns when needed.
-
-Rules:
-1. Return ONLY a single valid SQL SELECT. No explanation, no markdown.
-2. Never reference respondent_pii.
-3. Always end with LIMIT 50.
-4. Join responses ↔ response_options on respondent_id.
-5. When the question asks "per X" / "po X" (e.g. po platformi, po prometu),
-   GROUP BY that dimension — never return a single global number.
-6. For multi-select dimensions (in response_options) exclude the free-text
-   marker option ("Nešto drugo"/"Ostalo") from grouping.
-7. To count distinct respondents matching a free-text brand, use
-   COUNT(DISTINCT respondent_id) over response_options filtered by ILIKE.
-
-Example — "Koji je prosječni godišnji promet po platformi?":
-SELECT ro.option_value AS platforma,
-       ROUND(AVG(CASE r.q29_godisnji_bruto_promet_vaseg_webshopa_izn
-         WHEN 'do 40.000 eura' THEN 20000
-         WHEN '40.000 - 100.000 eura' THEN 70000
-         WHEN '100.000 - 200.000 eura' THEN 150000
-         WHEN '200.000 - 500.000 eura' THEN 350000
-         WHEN '500.000 - 1.000.000 eura' THEN 750000
-         WHEN 'Više od 1.000.000 eura' THEN 1500000 END)) AS prosjecni_promet_eur,
-       COUNT(*) AS n
-FROM responses r
-JOIN response_options ro ON ro.respondent_id = r.respondent_id
- AND ro.question_key = 'q04_na_kojoj_platformi_se_nalazi_vas_webshop'
-WHERE ro.option_value <> 'Nešto drugo'
-GROUP BY ro.option_value
-ORDER BY prosjecni_promet_eur DESC NULLS LAST
-LIMIT 50;`
-}
-
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -120,82 +31,24 @@ export async function POST(req: NextRequest) {
 
   const { data: appUser } = await supabase
     .from('app_users').select('role').eq('user_id', user.id).single()
-  const role = appUser?.role as 'admin' | 'partner' | undefined
+  const role = appUser?.role as Role | undefined
   if (!role) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const { question } = await req.json() as { question: string }
   if (!question?.trim()) return NextResponse.json({ error: 'Question required' }, { status: 400 })
 
-  // Load schema
-  const { data: questions } = await supabaseAdmin
-    .from('questions').select('key,label,type,options').order('ordinal')
-
-  const schemaLines = (questions ?? []).map(q => {
-    const opts = Array.isArray(q.options) && q.options.length
-      ? `. Options: ${(q.options as string[]).slice(0, 12).join(', ')}${q.options.length > 12 ? '…' : ''}`
-      : ''
-    const loc = role === 'admin'
-      ? (q.type === 'single'
-          ? `column "${q.key}" in responses`
-          : `response_options rows where question_key='${q.key}'`)
-      : `question_key='${q.key}' in question_aggregates`
-    return `- ${q.key} (${q.type}): "${q.label}" → ${loc}${opts}`
-  }).join('\n')
-
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
-
-  // Step 1: Generate SQL
-  const sqlMsg = await anthropic.messages.create({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 1024,
-    system: buildSystemPrompt(role, schemaLines),
-    messages: [{ role: 'user', content: question }],
-  })
-
-  const sql = stripCodeFence((sqlMsg.content[0] as { text: string }).text)
   const logBase = { user_id: user.id, email: user.email ?? null, role, question }
 
-  // Validate
-  if (!sql.toLowerCase().trimStart().startsWith('select')) {
-    await logQuery({ ...logBase, sql, success: false, error: 'Not a SELECT query' })
-    return NextResponse.json({ error: 'AI did not generate a SELECT query', sql }, { status: 422 })
+  try {
+    const result = await runAnalystQuery({ question, role, admin: supabaseAdmin, anthropic })
+    await logQuery({ ...logBase, sql: result.sql, row_count: result.rows.length, success: true })
+    return NextResponse.json(result)
+  } catch (e) {
+    if (e instanceof AnalystError) {
+      await logQuery({ ...logBase, sql: e.sql ?? null, success: false, error: e.message })
+      return NextResponse.json({ error: e.message, sql: e.sql }, { status: e.status })
+    }
+    throw e
   }
-  if (BLACKLIST_ALWAYS.test(sql)) {
-    await logQuery({ ...logBase, sql, success: false, error: 'Disallowed operations' })
-    return NextResponse.json({ error: 'Query contains disallowed operations', sql }, { status: 422 })
-  }
-  if (role === 'partner' && BLACKLIST_PARTNER.test(sql)) {
-    await logQuery({ ...logBase, sql, success: false, error: 'Partner queried non-aggregate data' })
-    return NextResponse.json({ error: 'Partners can only query aggregated data', sql }, { status: 422 })
-  }
-
-  // Execute
-  const { data: rows, error: dbError } = await supabaseAdmin
-    .rpc('execute_analyst_query', { query_text: sql })
-
-  if (dbError) {
-    await logQuery({ ...logBase, sql, success: false, error: dbError.message })
-    return NextResponse.json({ error: dbError.message, sql }, { status: 500 })
-  }
-
-  await logQuery({
-    ...logBase,
-    sql,
-    row_count: Array.isArray(rows) ? rows.length : null,
-    success: true,
-  })
-
-  // Step 2: Format response
-  const formatMsg = await anthropic.messages.create({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 512,
-    messages: [{
-      role: 'user',
-      content: `Question: "${question}"\n\nResults:\n${JSON.stringify(rows, null, 2)}\n\nWrite a concise 2-4 sentence analysis with the key numbers. Reply in the same language as the question.`,
-    }],
-  })
-
-  const analysis = (formatMsg.content[0] as { text: string }).text
-
-  return NextResponse.json({ sql, rows, analysis })
 }

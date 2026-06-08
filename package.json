@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "sec:check": "node scripts/sec-check.mjs"
+    "sec:check": "node scripts/sec-check.mjs",
+    "precompute:explore": "node --experimental-strip-types scripts/precompute-explore.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.100.1",
