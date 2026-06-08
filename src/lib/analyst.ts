@@ -37,7 +37,7 @@ ${schemaLines}
 Rules:
 1. Return ONLY a single valid SQL SELECT. No explanation, no markdown.
 2. Query ONLY the question_aggregates table.
-3. Always end with LIMIT 50.`
+3. Always end with LIMIT 500.`
   }
 
   return `You are a PostgreSQL analyst for a Croatian eCommerce survey (173 respondents).
@@ -79,7 +79,8 @@ core letters and use OR-ed ILIKE patterns when needed.
 Rules:
 1. Return ONLY a single valid SQL SELECT. No explanation, no markdown.
 2. Never reference respondent_pii.
-3. Always end with LIMIT 50.
+3. Always end with LIMIT 500 (the survey has 173 respondents, so this only
+   guards against runaway output — never truncate a real breakdown).
 4. Join responses ↔ response_options on respondent_id.
 5. When the question asks "per X" / "po X" (e.g. po platformi, po prometu),
    GROUP BY that dimension — never return a single global number.
@@ -104,7 +105,7 @@ JOIN response_options ro ON ro.respondent_id = r.respondent_id
 WHERE ro.option_value <> 'Nešto drugo'
 GROUP BY ro.option_value
 ORDER BY prosjecni_promet_eur DESC NULLS LAST
-LIMIT 50;`
+LIMIT 500;`
 }
 
 // Runs the full text-to-SQL pipeline: load schema → Claude writes SQL → validate

@@ -1,7 +1,7 @@
 [
   {
     "question": "Koje načine dostave biraju trgovci ovisno o prosječnom iznosu košarice?",
-    "sql": "SELECT \n    r.q27_koji_vam_je_prosjecni_iznos_kosarice AS prosjecni_iznos_kosarice,\n    ro.option_value AS nacin_dostave,\n    COUNT(DISTINCT r.respondent_id) AS broj_trgovaca\nFROM responses r\nJOIN response_options ro ON ro.respondent_id = r.respondent_id\n    AND ro.question_key = 'q10_koji_nacin_dostave_nudite'\nWHERE r.q27_koji_vam_je_prosjecni_iznos_kosarice IS NOT NULL\n  AND r.q27_koji_vam_je_prosjecni_iznos_kosarice <> 'Ne znam/nisam siguran'\n  AND ro.option_value <> 'Nešto drugo'\nGROUP BY r.q27_koji_vam_je_prosjecni_iznos_kosarice, ro.option_value\nORDER BY\n    CASE r.q27_koji_vam_je_prosjecni_iznos_kosarice\n        WHEN 'Do 50 €'       THEN 1\n        WHEN '50 do 100 €'   THEN 2\n        WHEN '100 do 200€'   THEN 3\n        WHEN '200 do 500€'   THEN 4\n        WHEN '500 do 1000€'  THEN 5\n        WHEN 'Više od 1000€' THEN 6\n    END,\n    broj_trgovaca DESC\nLIMIT 50",
+    "sql": "SELECT\n    r.q27_koji_vam_je_prosjecni_iznos_kosarice AS prosjecni_iznos_kosarice,\n    ro.option_value AS nacin_dostave,\n    COUNT(DISTINCT r.respondent_id) AS broj_trgovaca\nFROM responses r\nJOIN response_options ro\n    ON ro.respondent_id = r.respondent_id\n    AND ro.question_key = 'q10_koji_nacin_dostave_nudite'\nWHERE r.q27_koji_vam_je_prosjecni_iznos_kosarice IS NOT NULL\n  AND r.q27_koji_vam_je_prosjecni_iznos_kosarice <> 'Ne znam/nisam siguran'\n  AND ro.option_value NOT IN ('Nešto drugo')\nGROUP BY r.q27_koji_vam_je_prosjecni_iznos_kosarice, ro.option_value\nORDER BY\n    CASE r.q27_koji_vam_je_prosjecni_iznos_kosarice\n        WHEN 'Do 50 €'        THEN 1\n        WHEN '50 do 100 €'    THEN 2\n        WHEN '100 do 200€'    THEN 3\n        WHEN '200 do 500€'    THEN 4\n        WHEN '500 do 1000€'   THEN 5\n        WHEN 'Više od 1000€'  THEN 6\n    END,\n    broj_trgovaca DESC\nLIMIT 500",
     "rows": [
       {
         "broj_trgovaca": 43,
@@ -114,11 +114,11 @@
         "prosjecni_iznos_kosarice": "Više od 1000€"
       }
     ],
-    "analysis": "Bez obzira na prosječni iznos košarice, **dostava na kućnu adresu** dominantno je najpopularniji način dostave u svim segmentima – od 43 trgovca s košaricom do 50 € pa sve do 7 trgovaca s košaricom 500–1000 €. **Preuzimanje na paketomatu** posebno je popularno kod nižih iznosa košarice (28 trgovaca za do 50 € i 32 za 50–100 €), ali njegova zastupljenost značajno pada s rastom vrijednosti narudžbe (samo 2 trgovca za 500–1000 €). S druge strane, **preuzimanje u poslovnici ili skladištu** zadržava relativno stabilnu prisutnost kroz sve cjenovne razrede, što sugerira da je taj model relevantan i za skuplje proizvode. Zanimljivo je da kod košarica iznad 1000 € jedino dostava na kućnu adresu ostaje zastupljena, što ukazuje na visoka očekivanja kupaca pri premium kupovini."
+    "analysis": "Bez obzira na prosječni iznos košarice, **dostava na kućnu adresu** dominantno je najpopularniji način dostave kod svih segmenata trgovaca (43, 55, 24, 19, 7 i 1 trgovac po razredima). **Preuzimanje na paketomatu** je druga najpopularnija opcija kod manjih iznosa košarice (do 100 €), no gubi na važnosti kod viših iznosa, gdje ga zamjenjuje **preuzimanje u poslovnici ili skladištu**. Zanimljivo je da s rastom prosječnog iznosa košarice opada ukupan broj trgovaca, što sugerira da je segment s košaricom do 100 € najzastupljeniji, dok su trgovci s košaricom iznad 500 € relativno rijetki."
   },
   {
     "question": "Koji hosting koriste WooCommerce trgovci?",
-    "sql": "SELECT ro_hosting.option_value AS hosting,\n       COUNT(DISTINCT ro_hosting.respondent_id) AS broj_trgovaca\nFROM response_options ro_woo\nJOIN response_options ro_hosting\n    ON ro_hosting.respondent_id = ro_woo.respondent_id\n    AND ro_hosting.question_key = 'q05_koji_hosting_koristite'\nWHERE ro_woo.question_key = 'q04_na_kojoj_platformi_se_nalazi_vas_webshop'\n  AND ro_woo.option_value ILIKE '%woocommerce%'\n  AND ro_hosting.option_value NOT ILIKE '%Nešto drugo%'\nGROUP BY ro_hosting.option_value\nORDER BY broj_trgovaca DESC\nLIMIT 50",
+    "sql": "SELECT ro_hosting.option_value AS hosting,\n       COUNT(DISTINCT ro_hosting.respondent_id) AS broj_trgovaca\nFROM response_options ro_woo\nJOIN response_options ro_hosting\n    ON ro_hosting.respondent_id = ro_woo.respondent_id\n    AND ro_hosting.question_key = 'q05_koji_hosting_koristite'\nWHERE ro_woo.question_key = 'q04_na_kojoj_platformi_se_nalazi_vas_webshop'\n    AND ro_woo.option_value ILIKE '%woocommerce%'\n    AND ro_hosting.option_value NOT ILIKE '%Nešto drugo%'\nGROUP BY ro_hosting.option_value\nORDER BY broj_trgovaca DESC\nLIMIT 500",
     "rows": [
       {
         "hosting": "Ne znam/nisam siguran",
@@ -285,535 +285,725 @@
         "broj_trgovaca": 1
       }
     ],
-    "analysis": "Najveći broj WooCommerce trgovaca (22) nije siguran koji hosting koristi, što otežava preciznu analizu. Nakon njih, **Plus.hr** dominira kao najkorišteniji poznati hosting s 12 trgovaca, dok Amazon hosting zauzima drugo mjesto s 3 trgovca. Zanimljivo je da su mnogi odgovori fragmentirani zbog različitog pisanja istih hostera – primjerice, **MyDataKnox** se pojavljuje u 4 varijante (ukupno ~4 trgovca), **CyberFolks/Avalon** u 5 varijanti (~6 trgovaca), a **Totohost** u 3 varijante (~3 trgovca). Općenito, tržište je vrlo fragmentirano s brojnim manjim, pretežno hrvatskim hosting pružateljima."
+    "analysis": "Najveći broj WooCommerce trgovaca (22) nije siguran koji hosting koristi, što otežava potpunu analizu. Od onih koji znaju, **Plus.hr dominira** s 12 trgovaca, što ga čini daleko najpopularnijim poznatim hostingom. Na trećem mjestu je Amazon hosting s 3 trgovaca, dok su ostali pružatelji usluga (CyberFolks/Avalon, MyDataKnox, Totohost, Rocket, Poslovni web i dr.) zastupljeni s po 1-2 trgovca, što ukazuje na **vrlo fragmentirano tržište** bez jasnog drugog favorita."
   },
   {
     "question": "Koji se kanali oglašavanja koriste po broju mjesečnih posjeta?",
-    "sql": "SELECT\n    r.q21_koliko_posjeta_imate_mjesecno AS broj_posjeta,\n    ro.option_value AS kanal_oglasavanja,\n    COUNT(DISTINCT r.respondent_id) AS broj_respondanata\nFROM responses r\nJOIN response_options ro\n    ON ro.respondent_id = r.respondent_id\n    AND ro.question_key = 'q19_odaberite_nacine_oglasavanja_i_promocije'\nWHERE r.q21_koliko_posjeta_imate_mjesecno IS NOT NULL\n  AND r.q21_koliko_posjeta_imate_mjesecno <> 'Ne znam/nisam siguran'\n  AND ro.option_value NOT ILIKE '%Nešto drugo%'\nGROUP BY r.q21_koliko_posjeta_imate_mjesecno, ro.option_value\nORDER BY\n    CASE r.q21_koliko_posjeta_imate_mjesecno\n        WHEN 'Do 10.000'           THEN 1\n        WHEN '10.000 - 20.000'     THEN 2\n        WHEN '20.000 - 50.000'     THEN 3\n        WHEN '50.000 - 100.000'    THEN 4\n        WHEN 'Više od 100.000'     THEN 5\n    END,\n    broj_respondanata DESC\nLIMIT 50",
+    "sql": "SELECT\n    r.q21_koliko_posjeta_imate_mjesecno AS broj_posjeta,\n    ro.option_value AS kanal_oglasavanja,\n    COUNT(DISTINCT r.respondent_id) AS broj_respondenta\nFROM responses r\nJOIN response_options ro ON ro.respondent_id = r.respondent_id\n    AND ro.question_key = 'q19_odaberite_nacine_oglasavanja_i_promocije'\nWHERE r.q21_koliko_posjeta_imate_mjesecno IS NOT NULL\n  AND r.q21_koliko_posjeta_imate_mjesecno <> 'Ne znam/nisam siguran'\n  AND ro.option_value NOT ILIKE '%Nešto drugo%'\nGROUP BY r.q21_koliko_posjeta_imate_mjesecno, ro.option_value\nORDER BY\n    CASE r.q21_koliko_posjeta_imate_mjesecno\n        WHEN 'Do 10.000' THEN 1\n        WHEN '10.000 - 20.000' THEN 2\n        WHEN '20.000 - 50.000' THEN 3\n        WHEN '50.000 - 100.000' THEN 4\n        WHEN 'Više od 100.000' THEN 5\n    END,\n    broj_respondenta DESC\nLIMIT 500",
     "rows": [
       {
         "broj_posjeta": "Do 10.000",
-        "broj_respondanata": 59,
+        "broj_respondenta": 59,
         "kanal_oglasavanja": "Facebook"
       },
       {
         "broj_posjeta": "Do 10.000",
-        "broj_respondanata": 54,
+        "broj_respondenta": 54,
         "kanal_oglasavanja": "Instagram"
       },
       {
         "broj_posjeta": "Do 10.000",
-        "broj_respondanata": 43,
+        "broj_respondenta": 43,
         "kanal_oglasavanja": "Google"
       },
       {
         "broj_posjeta": "Do 10.000",
-        "broj_respondanata": 28,
+        "broj_respondenta": 28,
         "kanal_oglasavanja": "Newsletter"
       },
       {
         "broj_posjeta": "Do 10.000",
-        "broj_respondanata": 14,
+        "broj_respondenta": 14,
         "kanal_oglasavanja": "Suradnje s influencerima"
       },
       {
         "broj_posjeta": "Do 10.000",
-        "broj_respondanata": 11,
+        "broj_respondenta": 11,
         "kanal_oglasavanja": "Youtube"
       },
       {
         "broj_posjeta": "Do 10.000",
-        "broj_respondanata": 10,
+        "broj_respondenta": 10,
         "kanal_oglasavanja": "TikTok"
       },
       {
         "broj_posjeta": "Do 10.000",
-        "broj_respondanata": 6,
+        "broj_respondenta": 6,
         "kanal_oglasavanja": "Tisak"
       },
       {
         "broj_posjeta": "Do 10.000",
-        "broj_respondanata": 4,
+        "broj_respondenta": 4,
         "kanal_oglasavanja": "Usporedilice cijena (jeftinije.hr, nabava.net)"
       },
       {
         "broj_posjeta": "Do 10.000",
-        "broj_respondanata": 4,
+        "broj_respondenta": 4,
         "kanal_oglasavanja": "Affiliate marketing"
       },
       {
         "broj_posjeta": "Do 10.000",
-        "broj_respondanata": 3,
+        "broj_respondenta": 3,
         "kanal_oglasavanja": "SMS/Viber/Whatsapp"
       },
       {
         "broj_posjeta": "Do 10.000",
-        "broj_respondanata": 3,
+        "broj_respondenta": 3,
         "kanal_oglasavanja": "Radio"
       },
       {
         "broj_posjeta": "Do 10.000",
-        "broj_respondanata": 3,
+        "broj_respondenta": 3,
         "kanal_oglasavanja": "Televizija"
       },
       {
         "broj_posjeta": "Do 10.000",
-        "broj_respondanata": 2,
+        "broj_respondenta": 2,
         "kanal_oglasavanja": "Outdoor oglašavanje"
       },
       {
         "broj_posjeta": "Do 10.000",
-        "broj_respondanata": 1,
+        "broj_respondenta": 1,
         "kanal_oglasavanja": "LinkedIn"
       },
       {
         "broj_posjeta": "Do 10.000",
-        "broj_respondanata": 1,
+        "broj_respondenta": 1,
         "kanal_oglasavanja": "od usta do usta"
       },
       {
         "broj_posjeta": "10.000 - 20.000",
-        "broj_respondanata": 28,
+        "broj_respondenta": 28,
         "kanal_oglasavanja": "Facebook"
       },
       {
         "broj_posjeta": "10.000 - 20.000",
-        "broj_respondanata": 26,
+        "broj_respondenta": 26,
         "kanal_oglasavanja": "Instagram"
       },
       {
         "broj_posjeta": "10.000 - 20.000",
-        "broj_respondanata": 23,
+        "broj_respondenta": 23,
         "kanal_oglasavanja": "Newsletter"
       },
       {
         "broj_posjeta": "10.000 - 20.000",
-        "broj_respondanata": 21,
+        "broj_respondenta": 21,
         "kanal_oglasavanja": "Google"
       },
       {
         "broj_posjeta": "10.000 - 20.000",
-        "broj_respondanata": 9,
+        "broj_respondenta": 9,
         "kanal_oglasavanja": "Usporedilice cijena (jeftinije.hr, nabava.net)"
       },
       {
         "broj_posjeta": "10.000 - 20.000",
-        "broj_respondanata": 9,
+        "broj_respondenta": 9,
         "kanal_oglasavanja": "Suradnje s influencerima"
       },
       {
         "broj_posjeta": "10.000 - 20.000",
-        "broj_respondanata": 5,
+        "broj_respondenta": 5,
         "kanal_oglasavanja": "TikTok"
       },
       {
         "broj_posjeta": "10.000 - 20.000",
-        "broj_respondanata": 5,
+        "broj_respondenta": 5,
         "kanal_oglasavanja": "Youtube"
       },
       {
         "broj_posjeta": "10.000 - 20.000",
-        "broj_respondanata": 3,
+        "broj_respondenta": 3,
         "kanal_oglasavanja": "Affiliate marketing"
       },
       {
         "broj_posjeta": "10.000 - 20.000",
-        "broj_respondanata": 2,
+        "broj_respondenta": 2,
         "kanal_oglasavanja": "SMS/Viber/Whatsapp"
       },
       {
         "broj_posjeta": "10.000 - 20.000",
-        "broj_respondanata": 2,
+        "broj_respondenta": 2,
         "kanal_oglasavanja": "Televizija"
       },
       {
         "broj_posjeta": "10.000 - 20.000",
-        "broj_respondanata": 2,
+        "broj_respondenta": 2,
         "kanal_oglasavanja": "Radio"
       },
       {
         "broj_posjeta": "10.000 - 20.000",
-        "broj_respondanata": 2,
+        "broj_respondenta": 2,
         "kanal_oglasavanja": "Tisak"
       },
       {
         "broj_posjeta": "10.000 - 20.000",
-        "broj_respondanata": 2,
+        "broj_respondenta": 2,
         "kanal_oglasavanja": "Outdoor oglašavanje"
       },
       {
         "broj_posjeta": "20.000 - 50.000",
-        "broj_respondanata": 18,
+        "broj_respondenta": 18,
         "kanal_oglasavanja": "Facebook"
       },
       {
         "broj_posjeta": "20.000 - 50.000",
-        "broj_respondanata": 18,
+        "broj_respondenta": 18,
         "kanal_oglasavanja": "Google"
       },
       {
         "broj_posjeta": "20.000 - 50.000",
-        "broj_respondanata": 15,
+        "broj_respondenta": 15,
         "kanal_oglasavanja": "Instagram"
       },
       {
         "broj_posjeta": "20.000 - 50.000",
-        "broj_respondanata": 13,
+        "broj_respondenta": 13,
         "kanal_oglasavanja": "Newsletter"
       },
       {
         "broj_posjeta": "20.000 - 50.000",
-        "broj_respondanata": 9,
+        "broj_respondenta": 9,
         "kanal_oglasavanja": "Youtube"
       },
       {
         "broj_posjeta": "20.000 - 50.000",
-        "broj_respondanata": 6,
+        "broj_respondenta": 6,
         "kanal_oglasavanja": "Suradnje s influencerima"
       },
       {
         "broj_posjeta": "20.000 - 50.000",
-        "broj_respondanata": 5,
+        "broj_respondenta": 5,
         "kanal_oglasavanja": "Televizija"
       },
       {
         "broj_posjeta": "20.000 - 50.000",
-        "broj_respondanata": 4,
+        "broj_respondenta": 4,
         "kanal_oglasavanja": "Affiliate marketing"
       },
       {
         "broj_posjeta": "20.000 - 50.000",
-        "broj_respondanata": 4,
+        "broj_respondenta": 4,
         "kanal_oglasavanja": "TikTok"
       },
       {
         "broj_posjeta": "20.000 - 50.000",
-        "broj_respondanata": 3,
+        "broj_respondenta": 3,
         "kanal_oglasavanja": "Usporedilice cijena (jeftinije.hr, nabava.net)"
       },
       {
         "broj_posjeta": "20.000 - 50.000",
-        "broj_respondanata": 3,
+        "broj_respondenta": 3,
         "kanal_oglasavanja": "Radio"
       },
       {
         "broj_posjeta": "20.000 - 50.000",
-        "broj_respondanata": 3,
+        "broj_respondenta": 3,
         "kanal_oglasavanja": "Tisak"
       },
       {
         "broj_posjeta": "20.000 - 50.000",
-        "broj_respondanata": 2,
+        "broj_respondenta": 2,
         "kanal_oglasavanja": "SMS/Viber/Whatsapp"
       },
       {
         "broj_posjeta": "20.000 - 50.000",
-        "broj_respondanata": 1,
+        "broj_respondenta": 1,
         "kanal_oglasavanja": "Outdoor oglašavanje"
       },
       {
         "broj_posjeta": "50.000 - 100.000",
-        "broj_respondanata": 17,
+        "broj_respondenta": 17,
         "kanal_oglasavanja": "Facebook"
       },
       {
         "broj_posjeta": "50.000 - 100.000",
-        "broj_respondanata": 16,
+        "broj_respondenta": 16,
         "kanal_oglasavanja": "Google"
       },
       {
         "broj_posjeta": "50.000 - 100.000",
-        "broj_respondanata": 16,
+        "broj_respondenta": 16,
         "kanal_oglasavanja": "Instagram"
       },
       {
         "broj_posjeta": "50.000 - 100.000",
-        "broj_respondanata": 13,
+        "broj_respondenta": 13,
         "kanal_oglasavanja": "Newsletter"
       },
       {
         "broj_posjeta": "50.000 - 100.000",
-        "broj_respondanata": 10,
+        "broj_respondenta": 10,
         "kanal_oglasavanja": "Youtube"
       },
       {
         "broj_posjeta": "50.000 - 100.000",
-        "broj_respondanata": 9,
+        "broj_respondenta": 9,
         "kanal_oglasavanja": "TikTok"
+      },
+      {
+        "broj_posjeta": "50.000 - 100.000",
+        "broj_respondenta": 7,
+        "kanal_oglasavanja": "Suradnje s influencerima"
+      },
+      {
+        "broj_posjeta": "50.000 - 100.000",
+        "broj_respondenta": 7,
+        "kanal_oglasavanja": "Radio"
+      },
+      {
+        "broj_posjeta": "50.000 - 100.000",
+        "broj_respondenta": 7,
+        "kanal_oglasavanja": "Outdoor oglašavanje"
+      },
+      {
+        "broj_posjeta": "50.000 - 100.000",
+        "broj_respondenta": 5,
+        "kanal_oglasavanja": "Usporedilice cijena (jeftinije.hr, nabava.net)"
+      },
+      {
+        "broj_posjeta": "50.000 - 100.000",
+        "broj_respondenta": 3,
+        "kanal_oglasavanja": "Televizija"
+      },
+      {
+        "broj_posjeta": "50.000 - 100.000",
+        "broj_respondenta": 2,
+        "kanal_oglasavanja": "Tisak"
+      },
+      {
+        "broj_posjeta": "50.000 - 100.000",
+        "broj_respondenta": 1,
+        "kanal_oglasavanja": "Affiliate marketing"
+      },
+      {
+        "broj_posjeta": "Više od 100.000",
+        "broj_respondenta": 22,
+        "kanal_oglasavanja": "Instagram"
+      },
+      {
+        "broj_posjeta": "Više od 100.000",
+        "broj_respondenta": 22,
+        "kanal_oglasavanja": "Facebook"
+      },
+      {
+        "broj_posjeta": "Više od 100.000",
+        "broj_respondenta": 21,
+        "kanal_oglasavanja": "Google"
+      },
+      {
+        "broj_posjeta": "Više od 100.000",
+        "broj_respondenta": 21,
+        "kanal_oglasavanja": "Newsletter"
+      },
+      {
+        "broj_posjeta": "Više od 100.000",
+        "broj_respondenta": 20,
+        "kanal_oglasavanja": "Youtube"
+      },
+      {
+        "broj_posjeta": "Više od 100.000",
+        "broj_respondenta": 13,
+        "kanal_oglasavanja": "Suradnje s influencerima"
+      },
+      {
+        "broj_posjeta": "Više od 100.000",
+        "broj_respondenta": 13,
+        "kanal_oglasavanja": "TikTok"
+      },
+      {
+        "broj_posjeta": "Više od 100.000",
+        "broj_respondenta": 10,
+        "kanal_oglasavanja": "Televizija"
+      },
+      {
+        "broj_posjeta": "Više od 100.000",
+        "broj_respondenta": 10,
+        "kanal_oglasavanja": "Usporedilice cijena (jeftinije.hr, nabava.net)"
+      },
+      {
+        "broj_posjeta": "Više od 100.000",
+        "broj_respondenta": 9,
+        "kanal_oglasavanja": "Radio"
+      },
+      {
+        "broj_posjeta": "Više od 100.000",
+        "broj_respondenta": 8,
+        "kanal_oglasavanja": "Affiliate marketing"
+      },
+      {
+        "broj_posjeta": "Više od 100.000",
+        "broj_respondenta": 7,
+        "kanal_oglasavanja": "Tisak"
+      },
+      {
+        "broj_posjeta": "Više od 100.000",
+        "broj_respondenta": 7,
+        "kanal_oglasavanja": "Outdoor oglašavanje"
+      },
+      {
+        "broj_posjeta": "Više od 100.000",
+        "broj_respondenta": 6,
+        "kanal_oglasavanja": "SMS/Viber/Whatsapp"
+      },
+      {
+        "broj_posjeta": "Više od 100.000",
+        "broj_respondenta": 1,
+        "kanal_oglasavanja": "što"
+      },
+      {
+        "broj_posjeta": "Više od 100.000",
+        "broj_respondenta": 1,
+        "kanal_oglasavanja": "Indoor u poslovnicama"
+      },
+      {
+        "broj_posjeta": "Više od 100.000",
+        "broj_respondenta": 1,
+        "kanal_oglasavanja": "Criteo, Pmax kampanje programatik display ..."
       }
     ],
-    "analysis": "Across all monthly visit segments, **Facebook, Instagram i Google** dosljedno su tri najkorištenija kanala oglašavanja. U segmentu s najmanje posjeta (do 10.000), Facebook prednjači s 59 respondenata, dok Newsletter postaje sve važniji kanal s rastom broja posjeta – posebno u segmentima 10.000–20.000 (23) i 20.000–50.000 (13). Kanali poput TikToka, YouTubea i suradnji s influencerima bilježe umjerenu, ali stabilnu prisutnost u svim segmentima, dok tradicionalni mediji (TV, radio, tisak) ostaju marginalni bez obzira na veličinu trgovine."
+    "analysis": "Across all monthly visit categories, **Facebook, Instagram i Google** dosljedno su najkorišteniji kanali oglašavanja. U segmentu s najmanje posjeta (do 10.000), Facebook prednjači s 59 respondenata, dok Newsletter postaje sve značajniji s rastom prometa – posebno u kategorijama 10.000–20.000 (23) i \"više od 100.000\" (21 respondent). **YouTube, TikTok i suradnje s influencerima** rastu proporcionalno s brojem posjeta, a tradicionalni kanali poput televizije, radija i outdoor oglašavanja gotovo su isključivo zastupljeni kod web shopova s većim prometom (50.000+). Ovi podaci sugeriraju da manji web shopovi dominantno koriste društvene mreže i Google, dok veći igrači diversificiraju svoje oglašivačke kanale prema širem medijskom miksu."
   },
   {
     "question": "U koje svrhe trgovci koriste AI alate ovisno o svom godišnjem prometu?",
-    "sql": "SELECT\n    r.q29_godisnji_bruto_promet_vaseg_webshopa_izn AS godisnji_promet,\n    ro.option_value AS svrha_ai,\n    COUNT(DISTINCT r.respondent_id) AS broj_trgovaca\nFROM responses r\nJOIN response_options ro\n    ON ro.respondent_id = r.respondent_id\n    AND ro.question_key = 'q25_za_sto_sve_koristite_ai_alate'\nWHERE r.q29_godisnji_bruto_promet_vaseg_webshopa_izn IS NOT NULL\n  AND r.q29_godisnji_bruto_promet_vaseg_webshopa_izn <> 'Ne znam/nisam siguran'\n  AND ro.option_value NOT ILIKE '%Nešto drugo%'\n  AND ro.option_value NOT ILIKE '%Ostalo%'\nGROUP BY r.q29_godisnji_bruto_promet_vaseg_webshopa_izn, ro.option_value\nORDER BY\n    CASE r.q29_godisnji_bruto_promet_vaseg_webshopa_izn\n        WHEN 'do 40.000 eura'            THEN 1\n        WHEN '40.000 - 100.000 eura'     THEN 2\n        WHEN '100.000 - 200.000 eura'    THEN 3\n        WHEN '200.000 - 500.000 eura'    THEN 4\n        WHEN '500.000 - 1.000.000 eura'  THEN 5\n        WHEN 'Više od 1.000.000 eura'    THEN 6\n    END,\n    broj_trgovaca DESC\nLIMIT 50",
+    "sql": "SELECT\n    r.q29_godisnji_bruto_promet_vaseg_webshopa_izn AS godisnji_promet,\n    ro.option_value AS svrha_koristenja_ai,\n    COUNT(DISTINCT r.respondent_id) AS broj_trgovaca\nFROM responses r\nJOIN response_options ro\n    ON ro.respondent_id = r.respondent_id\n    AND ro.question_key = 'q25_za_sto_sve_koristite_ai_alate'\nWHERE r.q29_godisnji_bruto_promet_vaseg_webshopa_izn IS NOT NULL\n  AND r.q29_godisnji_bruto_promet_vaseg_webshopa_izn <> 'Ne znam/nisam siguran'\n  AND ro.option_value NOT ILIKE '%Nešto drugo%'\n  AND ro.option_value NOT ILIKE '%Ostalo%'\nGROUP BY\n    r.q29_godisnji_bruto_promet_vaseg_webshopa_izn,\n    ro.option_value\nORDER BY\n    CASE r.q29_godisnji_bruto_promet_vaseg_webshopa_izn\n        WHEN 'do 40.000 eura'             THEN 1\n        WHEN '40.000 - 100.000 eura'      THEN 2\n        WHEN '100.000 - 200.000 eura'     THEN 3\n        WHEN '200.000 - 500.000 eura'     THEN 4\n        WHEN '500.000 - 1.000.000 eura'   THEN 5\n        WHEN 'Više od 1.000.000 eura'     THEN 6\n    END,\n    broj_trgovaca DESC\nLIMIT 500",
     "rows": [
       {
-        "svrha_ai": "Izrada tekstova za web i social",
         "broj_trgovaca": 19,
-        "godisnji_promet": "do 40.000 eura"
+        "godisnji_promet": "do 40.000 eura",
+        "svrha_koristenja_ai": "Izrada tekstova za web i social"
       },
       {
-        "svrha_ai": "Izrada/dorada fotografija",
         "broj_trgovaca": 15,
-        "godisnji_promet": "do 40.000 eura"
+        "godisnji_promet": "do 40.000 eura",
+        "svrha_koristenja_ai": "Izrada/dorada fotografija"
       },
       {
-        "svrha_ai": "Izrada opisa proizvoda",
         "broj_trgovaca": 14,
-        "godisnji_promet": "do 40.000 eura"
+        "godisnji_promet": "do 40.000 eura",
+        "svrha_koristenja_ai": "Izrada opisa proizvoda"
       },
       {
-        "svrha_ai": "Istraživanje konkurencije",
         "broj_trgovaca": 10,
-        "godisnji_promet": "do 40.000 eura"
+        "godisnji_promet": "do 40.000 eura",
+        "svrha_koristenja_ai": "Istraživanje konkurencije"
       },
       {
-        "svrha_ai": "Analiza webshopa",
         "broj_trgovaca": 9,
-        "godisnji_promet": "do 40.000 eura"
+        "godisnji_promet": "do 40.000 eura",
+        "svrha_koristenja_ai": "Analiza webshopa"
       },
       {
-        "svrha_ai": "Dorada webshopa (pluginovi, automatizacije...)",
         "broj_trgovaca": 8,
-        "godisnji_promet": "do 40.000 eura"
+        "godisnji_promet": "do 40.000 eura",
+        "svrha_koristenja_ai": "Dorada webshopa (pluginovi, automatizacije...)"
       },
       {
-        "svrha_ai": "Izrada strategije za razvoj webshopa",
         "broj_trgovaca": 7,
-        "godisnji_promet": "do 40.000 eura"
+        "godisnji_promet": "do 40.000 eura",
+        "svrha_koristenja_ai": "Izrada strategije za razvoj webshopa"
       },
       {
-        "svrha_ai": "Komunikacija s kupcima (AI Chatbotovi)",
         "broj_trgovaca": 3,
-        "godisnji_promet": "do 40.000 eura"
+        "godisnji_promet": "do 40.000 eura",
+        "svrha_koristenja_ai": "Komunikacija s kupcima (AI Chatbotovi)"
       },
       {
-        "svrha_ai": "CRM sustav",
         "broj_trgovaca": 3,
-        "godisnji_promet": "do 40.000 eura"
+        "godisnji_promet": "do 40.000 eura",
+        "svrha_koristenja_ai": "CRM sustav"
       },
       {
-        "svrha_ai": "programiranje",
         "broj_trgovaca": 1,
-        "godisnji_promet": "do 40.000 eura"
+        "godisnji_promet": "do 40.000 eura",
+        "svrha_koristenja_ai": "programiranje"
       },
       {
-        "svrha_ai": "Izrada webshopa",
         "broj_trgovaca": 1,
-        "godisnji_promet": "do 40.000 eura"
+        "godisnji_promet": "do 40.000 eura",
+        "svrha_koristenja_ai": "Izrada webshopa"
       },
       {
-        "svrha_ai": "Izrada tekstova za web i social",
         "broj_trgovaca": 18,
-        "godisnji_promet": "40.000 - 100.000 eura"
+        "godisnji_promet": "40.000 - 100.000 eura",
+        "svrha_koristenja_ai": "Izrada tekstova za web i social"
       },
       {
-        "svrha_ai": "Izrada opisa proizvoda",
         "broj_trgovaca": 17,
-        "godisnji_promet": "40.000 - 100.000 eura"
+        "godisnji_promet": "40.000 - 100.000 eura",
+        "svrha_koristenja_ai": "Izrada opisa proizvoda"
       },
       {
-        "svrha_ai": "Izrada/dorada fotografija",
         "broj_trgovaca": 13,
-        "godisnji_promet": "40.000 - 100.000 eura"
+        "godisnji_promet": "40.000 - 100.000 eura",
+        "svrha_koristenja_ai": "Izrada/dorada fotografija"
       },
       {
-        "svrha_ai": "Analiza webshopa",
         "broj_trgovaca": 11,
-        "godisnji_promet": "40.000 - 100.000 eura"
+        "godisnji_promet": "40.000 - 100.000 eura",
+        "svrha_koristenja_ai": "Analiza webshopa"
       },
       {
-        "svrha_ai": "Dorada webshopa (pluginovi, automatizacije...)",
         "broj_trgovaca": 8,
-        "godisnji_promet": "40.000 - 100.000 eura"
+        "godisnji_promet": "40.000 - 100.000 eura",
+        "svrha_koristenja_ai": "Dorada webshopa (pluginovi, automatizacije...)"
       },
       {
-        "svrha_ai": "Istraživanje konkurencije",
         "broj_trgovaca": 7,
-        "godisnji_promet": "40.000 - 100.000 eura"
+        "godisnji_promet": "40.000 - 100.000 eura",
+        "svrha_koristenja_ai": "Istraživanje konkurencije"
       },
       {
-        "svrha_ai": "Izrada strategije za razvoj webshopa",
         "broj_trgovaca": 6,
-        "godisnji_promet": "40.000 - 100.000 eura"
+        "godisnji_promet": "40.000 - 100.000 eura",
+        "svrha_koristenja_ai": "Izrada strategije za razvoj webshopa"
       },
       {
-        "svrha_ai": "Izrada webshopa",
         "broj_trgovaca": 2,
-        "godisnji_promet": "40.000 - 100.000 eura"
+        "godisnji_promet": "40.000 - 100.000 eura",
+        "svrha_koristenja_ai": "Izrada webshopa"
       },
       {
-        "svrha_ai": "Komunikacija s kupcima (AI Chatbotovi)",
         "broj_trgovaca": 2,
-        "godisnji_promet": "40.000 - 100.000 eura"
+        "godisnji_promet": "40.000 - 100.000 eura",
+        "svrha_koristenja_ai": "Komunikacija s kupcima (AI Chatbotovi)"
       },
       {
-        "svrha_ai": "Newsletter izrada",
         "broj_trgovaca": 1,
-        "godisnji_promet": "40.000 - 100.000 eura"
+        "godisnji_promet": "40.000 - 100.000 eura",
+        "svrha_koristenja_ai": "Newsletter izrada"
       },
       {
-        "svrha_ai": "CRM sustav",
         "broj_trgovaca": 1,
-        "godisnji_promet": "40.000 - 100.000 eura"
+        "godisnji_promet": "40.000 - 100.000 eura",
+        "svrha_koristenja_ai": "CRM sustav"
       },
       {
-        "svrha_ai": "Izrada/dorada fotografija",
         "broj_trgovaca": 12,
-        "godisnji_promet": "100.000 - 200.000 eura"
+        "godisnji_promet": "100.000 - 200.000 eura",
+        "svrha_koristenja_ai": "Izrada/dorada fotografija"
       },
       {
-        "svrha_ai": "Izrada tekstova za web i social",
         "broj_trgovaca": 12,
-        "godisnji_promet": "100.000 - 200.000 eura"
+        "godisnji_promet": "100.000 - 200.000 eura",
+        "svrha_koristenja_ai": "Izrada tekstova za web i social"
       },
       {
-        "svrha_ai": "Izrada opisa proizvoda",
         "broj_trgovaca": 12,
-        "godisnji_promet": "100.000 - 200.000 eura"
+        "godisnji_promet": "100.000 - 200.000 eura",
+        "svrha_koristenja_ai": "Izrada opisa proizvoda"
       },
       {
-        "svrha_ai": "Istraživanje konkurencije",
         "broj_trgovaca": 8,
-        "godisnji_promet": "100.000 - 200.000 eura"
+        "godisnji_promet": "100.000 - 200.000 eura",
+        "svrha_koristenja_ai": "Istraživanje konkurencije"
       },
       {
-        "svrha_ai": "Analiza webshopa",
         "broj_trgovaca": 7,
-        "godisnji_promet": "100.000 - 200.000 eura"
+        "godisnji_promet": "100.000 - 200.000 eura",
+        "svrha_koristenja_ai": "Analiza webshopa"
       },
       {
-        "svrha_ai": "Izrada strategije za razvoj webshopa",
         "broj_trgovaca": 4,
-        "godisnji_promet": "100.000 - 200.000 eura"
+        "godisnji_promet": "100.000 - 200.000 eura",
+        "svrha_koristenja_ai": "Izrada strategije za razvoj webshopa"
       },
       {
-        "svrha_ai": "Komunikacija s kupcima (AI Chatbotovi)",
         "broj_trgovaca": 3,
-        "godisnji_promet": "100.000 - 200.000 eura"
+        "godisnji_promet": "100.000 - 200.000 eura",
+        "svrha_koristenja_ai": "Komunikacija s kupcima (AI Chatbotovi)"
       },
       {
-        "svrha_ai": "Izrada webshopa",
         "broj_trgovaca": 2,
-        "godisnji_promet": "100.000 - 200.000 eura"
+        "godisnji_promet": "100.000 - 200.000 eura",
+        "svrha_koristenja_ai": "Izrada webshopa"
       },
       {
-        "svrha_ai": "Dorada webshopa (pluginovi, automatizacije...)",
         "broj_trgovaca": 2,
-        "godisnji_promet": "100.000 - 200.000 eura"
+        "godisnji_promet": "100.000 - 200.000 eura",
+        "svrha_koristenja_ai": "Dorada webshopa (pluginovi, automatizacije...)"
       },
       {
-        "svrha_ai": "CRM sustav",
         "broj_trgovaca": 2,
-        "godisnji_promet": "100.000 - 200.000 eura"
+        "godisnji_promet": "100.000 - 200.000 eura",
+        "svrha_koristenja_ai": "CRM sustav"
       },
       {
-        "svrha_ai": "Izrada opisa proizvoda",
         "broj_trgovaca": 17,
-        "godisnji_promet": "200.000 - 500.000 eura"
+        "godisnji_promet": "200.000 - 500.000 eura",
+        "svrha_koristenja_ai": "Izrada opisa proizvoda"
       },
       {
-        "svrha_ai": "Izrada tekstova za web i social",
         "broj_trgovaca": 14,
-        "godisnji_promet": "200.000 - 500.000 eura"
+        "godisnji_promet": "200.000 - 500.000 eura",
+        "svrha_koristenja_ai": "Izrada tekstova za web i social"
       },
       {
-        "svrha_ai": "Izrada/dorada fotografija",
         "broj_trgovaca": 12,
-        "godisnji_promet": "200.000 - 500.000 eura"
+        "godisnji_promet": "200.000 - 500.000 eura",
+        "svrha_koristenja_ai": "Izrada/dorada fotografija"
       },
       {
-        "svrha_ai": "Istraživanje konkurencije",
         "broj_trgovaca": 10,
-        "godisnji_promet": "200.000 - 500.000 eura"
+        "godisnji_promet": "200.000 - 500.000 eura",
+        "svrha_koristenja_ai": "Istraživanje konkurencije"
       },
       {
-        "svrha_ai": "Analiza webshopa",
         "broj_trgovaca": 8,
-        "godisnji_promet": "200.000 - 500.000 eura"
+        "godisnji_promet": "200.000 - 500.000 eura",
+        "svrha_koristenja_ai": "Analiza webshopa"
       },
       {
-        "svrha_ai": "Dorada webshopa (pluginovi, automatizacije...)",
         "broj_trgovaca": 5,
-        "godisnji_promet": "200.000 - 500.000 eura"
+        "godisnji_promet": "200.000 - 500.000 eura",
+        "svrha_koristenja_ai": "Dorada webshopa (pluginovi, automatizacije...)"
       },
       {
-        "svrha_ai": "Izrada webshopa",
         "broj_trgovaca": 3,
-        "godisnji_promet": "200.000 - 500.000 eura"
+        "godisnji_promet": "200.000 - 500.000 eura",
+        "svrha_koristenja_ai": "Izrada webshopa"
       },
       {
-        "svrha_ai": "Izrada strategije za razvoj webshopa",
         "broj_trgovaca": 3,
-        "godisnji_promet": "200.000 - 500.000 eura"
+        "godisnji_promet": "200.000 - 500.000 eura",
+        "svrha_koristenja_ai": "Izrada strategije za razvoj webshopa"
       },
       {
-        "svrha_ai": "CRM sustav",
         "broj_trgovaca": 3,
-        "godisnji_promet": "200.000 - 500.000 eura"
+        "godisnji_promet": "200.000 - 500.000 eura",
+        "svrha_koristenja_ai": "CRM sustav"
       },
       {
-        "svrha_ai": "Komunikacija s kupcima (AI Chatbotovi)",
         "broj_trgovaca": 2,
-        "godisnji_promet": "200.000 - 500.000 eura"
+        "godisnji_promet": "200.000 - 500.000 eura",
+        "svrha_koristenja_ai": "Komunikacija s kupcima (AI Chatbotovi)"
       },
       {
-        "svrha_ai": "Izrada tekstova za web i social",
         "broj_trgovaca": 7,
-        "godisnji_promet": "500.000 - 1.000.000 eura"
+        "godisnji_promet": "500.000 - 1.000.000 eura",
+        "svrha_koristenja_ai": "Izrada tekstova za web i social"
       },
       {
-        "svrha_ai": "Izrada opisa proizvoda",
         "broj_trgovaca": 7,
-        "godisnji_promet": "500.000 - 1.000.000 eura"
+        "godisnji_promet": "500.000 - 1.000.000 eura",
+        "svrha_koristenja_ai": "Izrada opisa proizvoda"
       },
       {
-        "svrha_ai": "Izrada/dorada fotografija",
         "broj_trgovaca": 6,
-        "godisnji_promet": "500.000 - 1.000.000 eura"
+        "godisnji_promet": "500.000 - 1.000.000 eura",
+        "svrha_koristenja_ai": "Izrada/dorada fotografija"
       },
       {
-        "svrha_ai": "Analiza webshopa",
         "broj_trgovaca": 5,
-        "godisnji_promet": "500.000 - 1.000.000 eura"
+        "godisnji_promet": "500.000 - 1.000.000 eura",
+        "svrha_koristenja_ai": "Analiza webshopa"
       },
       {
-        "svrha_ai": "Izrada strategije za razvoj webshopa",
         "broj_trgovaca": 3,
-        "godisnji_promet": "500.000 - 1.000.000 eura"
+        "godisnji_promet": "500.000 - 1.000.000 eura",
+        "svrha_koristenja_ai": "Izrada strategije za razvoj webshopa"
       },
       {
-        "svrha_ai": "Istraživanje konkurencije",
         "broj_trgovaca": 3,
-        "godisnji_promet": "500.000 - 1.000.000 eura"
+        "godisnji_promet": "500.000 - 1.000.000 eura",
+        "svrha_koristenja_ai": "Istraživanje konkurencije"
       },
       {
-        "svrha_ai": "CRM sustav",
         "broj_trgovaca": 2,
-        "godisnji_promet": "500.000 - 1.000.000 eura"
+        "godisnji_promet": "500.000 - 1.000.000 eura",
+        "svrha_koristenja_ai": "CRM sustav"
       },
       {
-        "svrha_ai": "Dorada webshopa (pluginovi, automatizacije...)",
         "broj_trgovaca": 2,
-        "godisnji_promet": "500.000 - 1.000.000 eura"
+        "godisnji_promet": "500.000 - 1.000.000 eura",
+        "svrha_koristenja_ai": "Dorada webshopa (pluginovi, automatizacije...)"
+      },
+      {
+        "broj_trgovaca": 2,
+        "godisnji_promet": "500.000 - 1.000.000 eura",
+        "svrha_koristenja_ai": "Izrada webshopa"
+      },
+      {
+        "broj_trgovaca": 1,
+        "godisnji_promet": "500.000 - 1.000.000 eura",
+        "svrha_koristenja_ai": "Komunikacija s kupcima (AI Chatbotovi)"
+      },
+      {
+        "broj_trgovaca": 22,
+        "godisnji_promet": "Više od 1.000.000 eura",
+        "svrha_koristenja_ai": "Izrada opisa proizvoda"
+      },
+      {
+        "broj_trgovaca": 21,
+        "godisnji_promet": "Više od 1.000.000 eura",
+        "svrha_koristenja_ai": "Izrada tekstova za web i social"
+      },
+      {
+        "broj_trgovaca": 20,
+        "godisnji_promet": "Više od 1.000.000 eura",
+        "svrha_koristenja_ai": "Izrada/dorada fotografija"
+      },
+      {
+        "broj_trgovaca": 15,
+        "godisnji_promet": "Više od 1.000.000 eura",
+        "svrha_koristenja_ai": "Istraživanje konkurencije"
+      },
+      {
+        "broj_trgovaca": 14,
+        "godisnji_promet": "Više od 1.000.000 eura",
+        "svrha_koristenja_ai": "Analiza webshopa"
+      },
+      {
+        "broj_trgovaca": 13,
+        "godisnji_promet": "Više od 1.000.000 eura",
+        "svrha_koristenja_ai": "Komunikacija s kupcima (AI Chatbotovi)"
+      },
+      {
+        "broj_trgovaca": 9,
+        "godisnji_promet": "Više od 1.000.000 eura",
+        "svrha_koristenja_ai": "Izrada strategije za razvoj webshopa"
+      },
+      {
+        "broj_trgovaca": 6,
+        "godisnji_promet": "Više od 1.000.000 eura",
+        "svrha_koristenja_ai": "CRM sustav"
+      },
+      {
+        "broj_trgovaca": 5,
+        "godisnji_promet": "Više od 1.000.000 eura",
+        "svrha_koristenja_ai": "Dorada webshopa (pluginovi, automatizacije...)"
+      },
+      {
+        "broj_trgovaca": 2,
+        "godisnji_promet": "Više od 1.000.000 eura",
+        "svrha_koristenja_ai": "Izrada webshopa"
+      },
+      {
+        "broj_trgovaca": 1,
+        "godisnji_promet": "Više od 1.000.000 eura",
+        "svrha_koristenja_ai": "Prijevode"
+      },
+      {
+        "broj_trgovaca": 1,
+        "godisnji_promet": "Više od 1.000.000 eura",
+        "svrha_koristenja_ai": "što"
       }
     ],
-    "analysis": "Across all revenue segments, the most common AI uses are **content creation for web/social media** and **product descriptions**, consistently ranking at the top regardless of business size. Merchants with revenues **up to 40,000 euros** most frequently use AI for text creation (19 traders) and photo editing (15), while those in the **200,000–500,000 euro** range prioritize product descriptions most (17 traders). Higher-revenue merchants (500,000–1,000,000 euros) show a more balanced distribution across fewer use cases, suggesting more focused and strategic AI adoption. Naprednije primjene poput **CRM sustava, AI chatbotova i dorađivanja webshopa** ostaju marginalne u svim segmentima prometa, s tek 1–3 trgovca po kategoriji."
+    "analysis": "Bez obzira na godišnji promet, **izrada tekstova za web i social** te **izrada opisa proizvoda** i **izrada/dorada fotografija** dosljedno su najčešće svrhe korištenja AI alata u svim segmentima. Zanimljivo je da **komunikacija s kupcima putem AI chatbotova** značajno raste s prometom – od samo 3 trgovca u segmentu do 40.000 € do čak **13 trgovaca u segmentu iznad 1.000.000 €**, što sugerira da veći trgovci više ulažu u automatizaciju korisničke podrške. Slično se može primijetiti za **CRM sustave**, koji su gotovo zanemarivi kod manjih trgovaca (3), ali znatno zastupljeniji kod onih s prometom iznad milijun eura (6). Općenito, manji trgovci koriste AI prvenstveno za kreiranje sadržaja, dok veći diversificiraju primjenu prema naprednijim i strateškijim funkcijama."
   },
   {
     "question": "Koliko trgovaca koristi WooCommerce?",
-    "sql": "SELECT COUNT(DISTINCT respondent_id) AS broj_trgovaca\nFROM response_options\nWHERE question_key = 'q04_na_kojoj_platformi_se_nalazi_vas_webshop'\n  AND option_value ILIKE '%woocommerce%'\nLIMIT 50",
+    "sql": "SELECT COUNT(DISTINCT respondent_id) AS broj_trgovaca\nFROM response_options\nWHERE question_key = 'q04_na_kojoj_platformi_se_nalazi_vas_webshop'\n  AND option_value ILIKE '%woocommerce%'\nLIMIT 500",
     "rows": [
       {
         "broj_trgovaca": 78
       }
     ],
-    "analysis": "## Analiza korištenja WooCommerce-a\n\nPrema dostupnim podacima, trenutno **78 trgovaca** koristi WooCommerce platformu. Ovaj broj predstavlja konkretnu bazu korisnika koji su odabrali WooCommerce kao svoje rješenje za e-commerce. WooCommerce je popularna platforma za online prodaju, pa ovaj podatak može poslužiti kao osnova za daljnju analizu tržišnog udjela i potencijalnog rasta."
+    "analysis": "## Analiza korištenja WooCommerce-a\n\nPrema dostupnim podacima, trenutno **78 trgovaca** koristi WooCommerce platformu. Ovaj broj predstavlja bazu korisnika koji su odabrali WooCommerce kao svoje rješenje za e-commerce poslovanje. Za potpuniju analizu bilo bi korisno usporediti ovaj podatak s ukupnim brojem trgovaca te pratiti trend rasta ili pada kroz određeno vremensko razdoblje."
   },
   {
     "question": "Koji je prosječni godišnji promet po platformi?",
-    "sql": "SELECT ro.option_value AS platforma,\n       ROUND(AVG(CASE r.q29_godisnji_bruto_promet_vaseg_webshopa_izn\n         WHEN 'do 40.000 eura' THEN 20000\n         WHEN '40.000 - 100.000 eura' THEN 70000\n         WHEN '100.000 - 200.000 eura' THEN 150000\n         WHEN '200.000 - 500.000 eura' THEN 350000\n         WHEN '500.000 - 1.000.000 eura' THEN 750000\n         WHEN 'Više od 1.000.000 eura' THEN 1500000 END)) AS prosjecni_promet_eur,\n       COUNT(*) AS n\nFROM responses r\nJOIN response_options ro ON ro.respondent_id = r.respondent_id\n AND ro.question_key = 'q04_na_kojoj_platformi_se_nalazi_vas_webshop'\nWHERE ro.option_value <> 'Nešto drugo'\nGROUP BY ro.option_value\nORDER BY prosjecni_promet_eur DESC NULLS LAST\nLIMIT 50",
+    "sql": "SELECT ro.option_value AS platforma,\n       ROUND(AVG(CASE r.q29_godisnji_bruto_promet_vaseg_webshopa_izn\n         WHEN 'do 40.000 eura' THEN 20000\n         WHEN '40.000 - 100.000 eura' THEN 70000\n         WHEN '100.000 - 200.000 eura' THEN 150000\n         WHEN '200.000 - 500.000 eura' THEN 350000\n         WHEN '500.000 - 1.000.000 eura' THEN 750000\n         WHEN 'Više od 1.000.000 eura' THEN 1500000 END)) AS prosjecni_promet_eur,\n       COUNT(*) AS n\nFROM responses r\nJOIN response_options ro ON ro.respondent_id = r.respondent_id\n AND ro.question_key = 'q04_na_kojoj_platformi_se_nalazi_vas_webshop'\nWHERE ro.option_value <> 'Nešto drugo'\nGROUP BY ro.option_value\nORDER BY prosjecni_promet_eur DESC NULLS LAST\nLIMIT 500",
     "rows": [
       {
         "n": 1,
@@ -936,6 +1126,6 @@
         "prosjecni_promet_eur": 20000
       }
     ],
-    "analysis": "## Prosječni godišnji promet po platformi\n\nAnalizom podataka vidljivo je da enterprise platforme poput **SAP-a (i njegovih varijanti) te VSC Pro+** bilježe najviši prosječni godišnji promet od **1.500.000 EUR**, no svaka je zastupljena s tek jednim ispitanikom, što ograničava reprezentativnost podataka. Među platformama s većim uzorkom ističe se **Magento** (9 korisnika) s prosječnim prometom od **1.002.222 EUR**, dok **Custom rješenja** (47 korisnika) i **WooCommerce** (78 korisnika) bilježe promet od oko **787.234 EUR** i **281.026 EUR**. **Shopify** (13 korisnika) pokazuje relativno niži promet od **181.538 EUR**, a platforme poput WIX-a, Etsya i Odooa nalaze se pri dnu s prometom od samo **20.000 – 70.000 EUR**. Općeniti trend pokazuje da kompleksnije i skuplje platforme koreliraju s višim prometom, što je očekivano s obzirom na profil tvrtki koje ih koriste."
+    "analysis": "## Prosječni godišnji promet po platformi\n\nEnterprise platforme poput **SAP-a i VSC Pro+** bilježe najviši prosječni promet od **1.500.000 EUR**, što odražava njihovu upotrebu kod velikih tvrtki, dok **Magento** (n=9) slijedi s prosjekom od **1.002.222 EUR**. Najpopularnije platforme po broju korisnika – **Custom rješenje** (n=47) i **WordPress/WooCommerce** (n=78) – ostvaruju srednje vrijednosti prometa od **787.234 EUR** odnosno **281.026 EUR**. **Shopify** (n=13), unatoč relativno velikom broju korisnika, bilježi jedan od nižih prosjeka od **181.538 EUR**, dok platforme poput WIX-a, Etsyja i Joomle zauzimaju začelje s prosjekom od svega **20.000–70.000 EUR**. Generalni trend pokazuje jasnu korelaciju između složenosti/cijene platforme i visine ostvarenog prometa."
   }
 ]
