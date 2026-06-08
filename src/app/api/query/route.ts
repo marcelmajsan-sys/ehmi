@@ -71,6 +71,17 @@ midpoint with CASE and ignore "Ne znam/nisam siguran" (treat as NULL):
   'Do 50 €'→25, '50 do 100 €'→75, '100 do 200€'→150,
   '200 do 500€'→350, '500 do 1000€'→750, 'Više od 1000€'→1500
 
+IMPORTANT — free-text "other" answers:
+Multi-select questions let respondents type a custom answer under the
+"Nešto drugo"/"Ostalo" marker. Those raw answers are NOT in the options list
+above — they are stored verbatim as extra rows in response_options.option_value
+for that question_key. So a brand/keyword the user asks about (e.g. a courier,
+tool or platform) may only exist as free text. When the user names something
+that is not a listed option, search response_options.option_value with a
+case-insensitive ILIKE '%keyword%' instead of an exact match, and remember
+spelling/spacing varies (e.g. "InTime", "IN Time", "in time"); match on the
+core letters and use OR-ed ILIKE patterns when needed.
+
 Rules:
 1. Return ONLY a single valid SQL SELECT. No explanation, no markdown.
 2. Never reference respondent_pii.
@@ -80,6 +91,8 @@ Rules:
    GROUP BY that dimension — never return a single global number.
 6. For multi-select dimensions (in response_options) exclude the free-text
    marker option ("Nešto drugo"/"Ostalo") from grouping.
+7. To count distinct respondents matching a free-text brand, use
+   COUNT(DISTINCT respondent_id) over response_options filtered by ILIKE.
 
 Example — "Koji je prosječni godišnji promet po platformi?":
 SELECT ro.option_value AS platforma,
