@@ -6,7 +6,9 @@ import type { AppUser } from '@/app/admin/settings/page'
 
 type Props = {
   users: AppUser[]
+  currentUserId: string
   addUser: (formData: FormData) => Promise<{ error: string } | undefined>
+  deleteUser: (userId: string) => Promise<{ error: string } | undefined>
 }
 
 const ROLE_LABELS = {
@@ -19,13 +21,16 @@ const ROLE_DESCRIPTIONS = {
   partner: { en: 'Data access — Overview & Questions only', hr: 'Pristup podacima — samo Overview i Pitanja' },
 }
 
-export function SettingsContent({ users, addUser }: Props) {
+export function SettingsContent({ users, currentUserId, addUser, deleteUser }: Props) {
   const { lang } = useLang()
   const isEn = lang === 'en'
   const formRef = useRef<HTMLFormElement>(null)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [isPending, startTransition] = useTransition()
+  const [confirmId, setConfirmId] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [listError, setListError] = useState('')
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -40,6 +45,24 @@ export function SettingsContent({ users, addUser }: Props) {
         setSuccess(isEn ? 'User created successfully.' : 'Korisnik uspješno kreiran.')
         formRef.current?.reset()
       }
+    })
+  }
+
+  function handleDelete(userId: string) {
+    setListError('')
+    setDeletingId(userId)
+    startTransition(async () => {
+      const result = await deleteUser(userId)
+      if (result?.error) {
+        const msg = result.error === 'self'
+          ? (isEn ? "You can't delete your own account." : 'Ne možete obrisati vlastiti račun.')
+          : result.error === 'forbidden'
+            ? (isEn ? 'Not allowed.' : 'Nije dozvoljeno.')
+            : result.error
+        setListError(msg)
+      }
+      setDeletingId(null)
+      setConfirmId(null)
     })
   }
 
@@ -135,24 +158,67 @@ export function SettingsContent({ users, addUser }: Props) {
         <h2 className="text-base font-semibold text-gray-900 mb-5">
           {isEn ? `Users (${users.length})` : `Korisnici (${users.length})`}
         </h2>
+        {listError && (
+          <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2 mb-3">{listError}</p>
+        )}
         <div className="divide-y divide-gray-100">
-          {users.map(u => (
-            <div key={u.user_id} className="flex items-center justify-between py-3">
-              <div>
-                <p className="text-sm font-medium text-gray-900">{u.email}</p>
-                <p className="text-xs text-gray-400 mt-0.5">
-                  {new Date(u.created_at).toLocaleDateString(isEn ? 'en-GB' : 'hr-HR')}
-                </p>
+          {users.map(u => {
+            const isSelf = u.user_id === currentUserId
+            const isConfirming = confirmId === u.user_id
+            const isDeleting = deletingId === u.user_id
+            return (
+              <div key={u.user_id} className="flex items-center justify-between gap-3 py-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-gray-900 truncate">{u.email}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {new Date(u.created_at).toLocaleDateString(isEn ? 'en-GB' : 'hr-HR')}
+                  </p>
+                </div>
+                <div className="flex items-center gap-3 shrink-0">
+                  <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
+                    u.role === 'admin'
+                      ? 'bg-blue-100 text-blue-700'
+                      : 'bg-gray-100 text-gray-600'
+                  }`}>
+                    {ROLE_LABELS[u.role][lang]}
+                  </span>
+
+                  {isSelf ? (
+                    <span className="text-xs text-gray-300 select-none">
+                      {isEn ? 'You' : 'Vi'}
+                    </span>
+                  ) : isConfirming ? (
+                    <span className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleDelete(u.user_id)}
+                        disabled={isPending}
+                        className="text-xs font-semibold text-red-600 hover:text-red-700 disabled:opacity-50"
+                      >
+                        {isDeleting
+                          ? (isEn ? 'Deleting…' : 'Brišem…')
+                          : (isEn ? 'Confirm' : 'Potvrdi')}
+                      </button>
+                      <button
+                        onClick={() => setConfirmId(null)}
+                        disabled={isPending}
+                        className="text-xs text-gray-400 hover:text-gray-600 disabled:opacity-50"
+                      >
+                        {isEn ? 'Cancel' : 'Odustani'}
+                      </button>
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => { setListError(''); setConfirmId(u.user_id) }}
+                      className="text-xs font-medium text-gray-400 hover:text-red-600 transition-colors"
+                      title={isEn ? 'Delete user' : 'Obriši korisnika'}
+                    >
+                      {isEn ? 'Delete' : 'Obriši'}
+                    </button>
+                  )}
+                </div>
               </div>
-              <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
-                u.role === 'admin'
-                  ? 'bg-blue-100 text-blue-700'
-                  : 'bg-gray-100 text-gray-600'
-              }`}>
-                {ROLE_LABELS[u.role][lang]}
-              </span>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </div>
     </div>

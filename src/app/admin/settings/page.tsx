@@ -39,11 +39,34 @@ async function addUser(formData: FormData) {
   revalidatePath('/admin/settings')
 }
 
+async function deleteUser(userId: string) {
+  'use server'
+  const current = await getCurrentUser()
+  if (!current || current.role !== 'admin') return { error: 'forbidden' }
+  // Guard against an admin locking themselves out.
+  if (userId === current.user.id) return { error: 'self' }
+
+  // Deleting the auth user cascades to app_users (FK on delete cascade).
+  const { error } = await supabaseAdmin.auth.admin.deleteUser(userId)
+  if (error) return { error: error.message }
+
+  revalidatePath('/admin/settings')
+}
+
 export default async function SettingsPage() {
+  const current = await getCurrentUser()
+
   const { data: users } = await supabaseAdmin
     .from('app_users')
     .select('user_id, email, role, created_at')
     .order('created_at', { ascending: true })
 
-  return <SettingsContent users={(users ?? []) as AppUser[]} addUser={addUser} />
+  return (
+    <SettingsContent
+      users={(users ?? []) as AppUser[]}
+      currentUserId={current?.user.id ?? ''}
+      addUser={addUser}
+      deleteUser={deleteUser}
+    />
+  )
 }
