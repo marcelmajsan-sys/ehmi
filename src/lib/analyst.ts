@@ -88,6 +88,25 @@ Rules:
    marker option ("Nešto drugo"/"Ostalo") from grouping.
 7. To count distinct respondents matching a free-text brand, use
    COUNT(DISTINCT respondent_id) over response_options filtered by ILIKE.
+8. CROSS-TAB ("X ovisno o Y", "X po Y" where BOTH X and Y are categories,
+   e.g. "koju platformu koriste ovisno o prometu"): produce ONE aggregation
+   grouped by BOTH dimensions — GROUP BY dimX, dimY with the COUNT in the SAME
+   query. NEVER compute a per-X aggregate and a per-Y list separately and then
+   CROSS JOIN / combine them: that is a cartesian product where each count is
+   wrongly repeated across every value of the other dimension. A correct
+   cross-tab's counts must sum back to the real totals.
+
+Example — "Koju platformu trgovci koriste ovisno o godišnjem prometu?" (cross-tab):
+SELECT ro.option_value AS platforma,
+       r.q29_godisnji_bruto_promet_vaseg_webshopa_izn AS godisnji_promet,
+       COUNT(DISTINCT ro.respondent_id) AS broj_trgovaca
+FROM responses r
+JOIN response_options ro ON ro.respondent_id = r.respondent_id
+ AND ro.question_key = 'q04_na_kojoj_platformi_se_nalazi_vas_webshop'
+WHERE ro.option_value <> 'Nešto drugo'
+GROUP BY ro.option_value, r.q29_godisnji_bruto_promet_vaseg_webshopa_izn
+ORDER BY platforma, godisnji_promet
+LIMIT 500;
 
 Example — "Koji je prosječni godišnji promet po platformi?":
 SELECT ro.option_value AS platforma,
