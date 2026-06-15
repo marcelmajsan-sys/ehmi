@@ -35,6 +35,8 @@ yarn-error.log*
 
 # PII — never in git
 supabase/seed_private.sql
+scripts/partner-emails.txt
+scripts/partner-logins.xlsx
 
 # supabase CLI local temp
 supabase/.temp/
