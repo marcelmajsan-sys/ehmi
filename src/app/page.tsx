@@ -1,25 +1,23 @@
 import { createClient } from '@/lib/supabase/server'
+import { fetchRespondentBase } from '@/lib/respondent-base'
 import { OverviewContent, type OverviewData } from '@/components/overview/OverviewContent'
 import type { ChartItem } from '@/components/charts/SurveyBarChart'
 
-type Agg = { question_key: string; option_value: string; count: number; respondent_count: number | null }
+type Agg = { question_key: string; option_value: string; count: number }
 type AggMap = Record<string, ChartItem[]>
 type BaseMap = Record<string, number>
 
-// Per-question denominator = respondents who answered (respondent_count). For
-// multi-select questions this is much smaller than the sum of option counts, so
-// percentages reflect share of respondents rather than share of selections.
-// Single-select questions have respondent_count == sum, so they're unchanged.
-// Falls back to the sum where respondent_count isn't populated (pre-migration).
-function buildBase(aggs: Agg[]): BaseMap {
-  const base: BaseMap = {}
+// Per-question denominator = respondents who answered (from fetchRespondentBase).
+// For multi-select questions this is much smaller than the sum of option counts,
+// so percentages reflect share of respondents rather than share of selections.
+// Single-select questions have base == sum, so they're unchanged. Falls back to
+// the sum where the base is missing (e.g. RPC unavailable).
+function buildBase(aggs: Agg[], rpcBase: Record<string, number>): BaseMap {
   const sum: BaseMap = {}
-  for (const a of aggs) {
-    sum[a.question_key] = (sum[a.question_key] ?? 0) + a.count
-    if (a.respondent_count != null) base[a.question_key] = a.respondent_count
-  }
+  for (const a of aggs) sum[a.question_key] = (sum[a.question_key] ?? 0) + a.count
+  const base: BaseMap = {}
   for (const key of Object.keys(sum)) {
-    if (!base[key] || base[key] <= 0) base[key] = sum[key]
+    base[key] = rpcBase[key] && rpcBase[key] > 0 ? rpcBase[key] : sum[key]
   }
   return base
 }
@@ -60,9 +58,10 @@ function pct(map: AggMap, base: BaseMap, key: string, options: string[]): number
 
 export default async function OverviewPage() {
   const supabase = await createClient()
-  const { data: aggs, error } = await supabase
-    .from('question_aggregates')
-    .select('question_key,option_value,count,respondent_count')
+  const [{ data: aggs, error }, rpcBase] = await Promise.all([
+    supabase.from('question_aggregates').select('question_key,option_value,count'),
+    fetchRespondentBase(),
+  ])
 
   if (error || !aggs) {
     return (
@@ -72,7 +71,7 @@ export default async function OverviewPage() {
     )
   }
 
-  const base = buildBase(aggs)
+  const base = buildBase(aggs, rpcBase)
   const byQ = groupAggs(aggs, base)
   const top = (key: string, n: number) => topN(byQ[key] ?? [], n, base[key] ?? 0)
 
