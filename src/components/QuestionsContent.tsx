@@ -6,15 +6,21 @@ import { SurveyPieChart } from '@/components/charts/SurveyPieChart'
 import { translateOption, translateLabel } from '@/translations/survey-data'
 
 type Question = { key: string; ordinal: number; label: string; type: string }
-type Agg = { question_key: string; option_value: string; count: number }
+type Agg = { question_key: string; option_value: string; count: number; respondent_count?: number | null }
 type OtherAnswer = { question_key: string; answer_value: string; count: number }
 
+// Percentages are share of RESPONDENTS who answered the question
+// (respondent_count), not share of all option selections — otherwise multi-select
+// options (where one respondent picks several) read far too low. respondent_count
+// equals the sum of counts for single-select questions, so those are unchanged.
+// Falls back to the sum if respondent_count isn't populated yet (pre-migration).
 // Free-text "Ostalo" write-ins are excluded from the bars (they belong only in
-// the "Ostalo" breakdown), but stay in `total` so predefined-option percentages
-// are unchanged.
+// the "Ostalo" breakdown); they don't affect respondent_count.
 function buildChartData(aggs: Agg[], key: string, exclude: Set<string>): ChartItem[] {
   const items = aggs.filter(a => a.question_key === key)
-  const total = items.reduce((s, a) => s + a.count, 0)
+  const sum = items.reduce((s, a) => s + a.count, 0)
+  const base = items[0]?.respondent_count ?? 0
+  const total = base > 0 ? base : sum
   return items
     .filter(a => !exclude.has(a.option_value))
     .map(a => ({ option_value: a.option_value, count: a.count, pct: total > 0 ? Math.round((a.count / total) * 100) : 0 }))
