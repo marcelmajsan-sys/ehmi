@@ -3,7 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase/admin'
 import { QuestionsContent } from '@/components/QuestionsContent'
 
 type Question    = { key: string; ordinal: number; label: string; type: string }
-type Agg         = { question_key: string; option_value: string; count: number }
+type Agg         = { question_key: string; option_value: string; count: number; respondent_count: number | null }
 type OtherAnswer = { question_key: string; answer_value: string; count: number }
 
 // Reconstructs free-text "Ostalo / Nešto drugo" answers from response_options.
@@ -60,7 +60,7 @@ export default async function PitanjaPage() {
 
   const [{ data: questions }, { data: aggs }, { data: otherRaw }] = await Promise.all([
     supabase.from('questions').select('key,ordinal,label,type').order('ordinal'),
-    supabase.from('question_aggregates').select('question_key,option_value,count'),
+    supabase.from('question_aggregates').select('question_key,option_value,count,respondent_count'),
     supabaseAdmin.rpc('execute_analyst_query', { query_text: OTHER_ANSWERS_SQL }),
   ])
 
