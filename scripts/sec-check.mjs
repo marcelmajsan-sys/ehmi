@@ -76,7 +76,7 @@ for (const [label, sql] of [
   ['partner-agregati',   'select question_key, option_value, count from question_aggregates limit 3'],
   ['admin responses',    'select count(*)::int as n from responses'],
   ['"Ostalo" rekonstrukcija',
-    `with markers as (select q.key qk, m.value marker from questions q, lateral jsonb_array_elements_text(q.options) m(value) where m.value ~* 'ostalo|nešto drugo')
+    `with markers as (select q.key qk, m.value marker from questions q, lateral jsonb_array_elements_text(q.options) m(value) where m.value ~* 'ostalo|drugo|drugi')
      select count(*)::int n from response_options ro join markers mk on mk.qk=ro.question_key and ro.option_value=mk.marker`],
 ]) {
   const r = await rpc(admin, sql)
