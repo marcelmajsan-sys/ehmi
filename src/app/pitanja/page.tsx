@@ -8,6 +8,10 @@ type Agg         = { question_key: string; option_value: string; count: number }
 type OtherAnswer = { question_key: string; answer_value: string; count: number }
 
 // Reconstructs free-text "Ostalo / Nešto drugo" answers from response_options.
+// The marker regex must catch every phrasing the survey uses for the write-in
+// option: "Ostalo", "Nešto drugo (...)", "nesto drugo", "Neki drugi (napišite
+// koji)" — hence matching on ostalo|drugo|drugi (every such marker contains one,
+// and no real predefined option does).
 // A free-text value = held only by respondents who picked the "other" marker for
 // that question, and never by a respondent without the marker (so real predefined
 // options like "Magento" are excluded). Run via service role to bypass RLS + the
@@ -17,7 +21,7 @@ with markers as (
   select q.key as question_key, m.value as marker
   from questions q,
        lateral jsonb_array_elements_text(q.options) as m(value)
-  where m.value ~* 'ostalo|nešto drugo'
+  where m.value ~* 'ostalo|drugo|drugi'
 ),
 marked_resp as (
   select distinct ro.respondent_id, ro.question_key
